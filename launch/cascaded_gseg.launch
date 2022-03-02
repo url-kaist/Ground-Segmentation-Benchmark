@@ -1,0 +1,14 @@
+<launch>
+
+<node name="$(anon benchmark)" pkg="nonplanar_gpf" type="benchmark" output="screen">
+<rosparam param="/algorithm">"cascaded_gseg"</rosparam> # Select among [gpf, r_gpf]
+<rosparam param="/seq">"00"</rosparam>
+<rosparam param="/save_csv_file">true</rosparam>
+<rosparam param="/data_path">true</rosparam>
+<rosparam param="/output_csvpath">"/data/"</rosparam>
+</node>
+<!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find nonplanar_gpf)/rviz/cascaded_gseg.rviz"/-->
+
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find nonplanar_gpf)/rviz/ground4r_gpf.rviz"/>
+<rosparam command="load" file="$(find nonplanar_gpf)/config/params.yaml" />
+</launch>

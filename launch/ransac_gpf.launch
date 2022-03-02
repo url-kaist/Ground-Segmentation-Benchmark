@@ -1,0 +1,17 @@
+<launch>
+
+
+<rosparam command="load" file="$(find nonplanar_gpf)/config/params.yaml" />
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find nonplanar_gpf)/rviz/basic.rviz"/>
+<node name="$(anon benchmark_offline)" pkg="nonplanar_gpf" type="benchmark_offline" output="screen">
+
+<rosparam param="/algorithm">"cascaded_gseg"</rosparam> 
+<rosparam param="/sequence">"02"</rosparam> 
+<rosparam param="/init_idx">3299</rosparam> 
+<rosparam param="/data_path">"/data/SemanticKITTI/sequences"</rosparam>
+<rosparam param="/output_csvpath">"/data/patchwork_dev/"</rosparam>
+<rosparam param="/save_csv_file">true</rosparam>
+</node>
+
+</launch>
+

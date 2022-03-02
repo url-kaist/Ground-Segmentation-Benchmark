@@ -1,0 +1,11 @@
+python kitti2node.py -t None -r None -s 01 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 02 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 03 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 04 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 05 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 06 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 07 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 08 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 09 --kitti_type "odom_noimg"
+python kitti2node.py -t None -r None -s 10 --kitti_type "odom_noimg"
+

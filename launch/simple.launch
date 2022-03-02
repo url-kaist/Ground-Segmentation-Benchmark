@@ -1,0 +1,10 @@
+<launch>
+
+<node name="$(anon benchmark)" pkg="nonplanar_gpf" type="benchmark" output="screen">
+<rosparam param="/algorithm">"simple"</rosparam> # Select among [gpf, r_gpf, simple]
+<rosparam param="/seq">"10"</rosparam> 
+</node>
+<node name="$(anon rviz)" pkg="rviz" type="rviz" args="-d $(find nonplanar_gpf)/rviz/ground4r_gpf.rviz"/>
+
+<rosparam command="load" file="$(find nonplanar_gpf)/config/params.yaml" />
+</launch>
