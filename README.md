@@ -2,6 +2,10 @@
 
 All the baseline methods are organized.
 
+## Contributor
+
+* jeewon Kim (as a research intern @ [URL](https://urobot.kaist.ac.kr/)): `ddarong2000@kaist.ac.kr`
+* Hyungtae Lim: `shapelim@kaist.ac.kr`
 
 ## Requirements
 
@@ -65,7 +69,4 @@ rosparam set /init_idx 0
 * 해당 알고리즘에 대한 rviz 파일을 따로 생성하길 권장
 
 
-## Contributor
 
-* jeewon Kim (as a research intern @ [URL](https://urobot.kaist.ac.kr/)): `ddarong2000@kaist.ac.kr`
-* Hyungtae Lim: `shapelim@kaist.ac.kr`
