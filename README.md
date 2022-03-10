@@ -9,7 +9,6 @@ All the baseline methods are organized.
 
 ## Contents
 
----
 0. [Test Env.]()
 1. [Requirements]()
 2. [Prepare DataSet]()
@@ -18,14 +17,13 @@ All the baseline methods are organized.
 
 ## Test Env.
 
----
 The code is tested successfully at
 * Linux 18.04 LTS
 * ROS Melodic
 
 ## Requirements
 
----
+
 ### ROS Settings
 
 * Install [ROS](http://wiki.ros.org/melodic/Installation) on a machine
@@ -48,7 +46,7 @@ cd .. && catkin build gseg
 
 ## Prepare Dataset
 
----
+
 ### Offline KITTI dataset
 1. Download [SemanticKITTI](http://www.semantic-kitti.org/dataset.html#download) Odometry dataset including Velodyne point clouds, calibration data, and label data.
 2. Set the `data_path` in `launch/ransac_gpf.launch`(can be changed) for your machine.
