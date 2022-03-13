@@ -206,8 +206,7 @@ void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
     if (reject_num_of_outliers){
         int num_outliers_est = count_num_outliers(ground_estimated);
         int num_outliers_gt = count_num_outliers(pc_curr);
-        cout<<"est size: "<<ground_estimated.size()<<" | num TP: "<<num_TP<<endl;
-        cout<<"num_ground_est: "<<num_ground_est<<" | outlier est: "<<num_outliers_est<<endl;
+        cout<<" outlier est: "<<num_outliers_est<<endl;
         num_FP = (num_ground_est - num_outliers_est) - num_TP;
         num_FN = num_ground_gt - num_TP;
         num_TF = (pc_curr.points.size() - num_outliers_gt) - (num_TP + num_FP + num_FN);

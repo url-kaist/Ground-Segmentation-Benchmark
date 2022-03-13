@@ -89,6 +89,7 @@ namespace params{
     bool zavg_allow;                               /*egyszerűsített polygon z-koordinátái átlagból (engedély)*/
     float polysimp;                                 /*polygon-egyszerűsítési tényező (Ramer-Douglas-Peucker)*/
     float polyz;                                   /*manuálisan megadott z-koordináta (polygon)*/
+    float sensor_height;
 };
 /*For pointcloud filtering*/
 template <typename PointT>
@@ -139,6 +140,7 @@ void paramsCallback(urban_road_filter::LidarFiltersConfig &config, uint32_t leve
     params::polysimp = config.poly_s_param;
     params::zavg_allow = config.poly_z_avg_allow;
     params::polyz = config.poly_z_manual;
+    params::sensor_height = config.sensor_height;
     ROS_INFO("Updated params %s", ros::this_node::getName().c_str());
 }
 
@@ -301,10 +303,7 @@ void Detector::filtered( pcl::PointCloud<PointXYZILID> &cloudIn_xyzilid,
 
     auto filterCondition = boost::make_shared<FilteringCondition<pcl::PointXYZI>>(
             [=](const pcl::PointXYZI& point){
-                return point.x >= params::min_X && point.x <= params::max_X &&
-                       point.y >= params::min_Y && point.y <= params::max_Y &&
-                       point.z >= params::min_Z && point.z <= params::max_Z &&
-                       point.x + point.y + point.z != 0;
+                return point.z <= (-1.8*params::sensor_height) ; //params::max_Z;
             }
     );
     pcl::ConditionalRemoval<pcl::PointXYZI> condition_removal;
@@ -314,6 +313,7 @@ void Detector::filtered( pcl::PointCloud<PointXYZILID> &cloudIn_xyzilid,
 
     /*number of points in the detection area*/
     size_t piece = cloud_filtered_Box->points.size();
+    cout<<"piece: "<<piece<<endl;
 
     /*A minimum of 30 points are requested in the detection area to avoid errors.
     Also, there is not much point in evaluating less data than that.*/
@@ -829,6 +829,8 @@ void Detector::filtered( pcl::PointCloud<PointXYZILID> &cloudIn_xyzilid,
 
     cloudOut = cloud_filtered_Road;// + cloud_filtered_ProbablyRoad;
     cloudNonground = cloud_filtered_High;
+
+    cout<<" ground: "<<cloud_filtered_Road.size()<<" | nonground: "<<cloud_filtered_High.size() <<endl;
 
     /*publishing*/
 //    pub_road.publish(cloud_filtered_Road);  //filtered points (driveable road)

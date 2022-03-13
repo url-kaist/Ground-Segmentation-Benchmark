@@ -281,6 +281,7 @@ int main(int argc, char **argv) {
             pc_non_ground.clear();
 
             cout << "Operating urban_road_filter..." << endl;
+            //cout<<"input pc size: "<<pc_curr.points.size()<<endl;
             urban_road_filt->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
             for (size_t i = 0; i < pc_curr.size(); i++) {
                 const auto &pt = pc_curr.points[i];
@@ -300,7 +301,7 @@ int main(int argc, char **argv) {
                     }
                 }
             }
-            //cout<<" ground "<< pc_ground.size()<<" | nonground "<<pc_non_ground.size() <<endl;
+            //cout<<" ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size() <<endl;
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
