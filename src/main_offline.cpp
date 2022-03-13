@@ -15,6 +15,9 @@
 #include "patchwork/patchwork.hpp"
 #include "cascadedseg/cascaded_groundseg.hpp"
 #include "linefit/ground_segmentation.h"
+#include "urban_road_filter/data_structures.hpp"
+
+#include <gseg_benchmark/LidarFiltersConfig.h>
 
 #include <csignal>
 
@@ -35,6 +38,7 @@ boost::shared_ptr<RegionwiseGPF>     r_gpf;
 boost::shared_ptr<RansacGPF>         ransac_gpf;
 boost::shared_ptr<PatchWork>         patchwork;
 boost::shared_ptr<CascadedGroundSeg> cascaded_gseg;
+boost::shared_ptr<Detector>          urban_road_filt;
 
 std::string acc_filename, pcd_savepath;
 string      algorithm;
@@ -82,6 +86,17 @@ void xyzilid2xyz(const pcl::PointCloud<PointType> &src, pcl::PointCloud<pcl::Poi
         pt_dst.y = pt_src.y;
         pt_dst.z = pt_src.z;
         dst.points.emplace_back(pt_dst);
+    }
+}
+void xyzilid2xyzi(const pcl::PointCloud<PointType> &src, pcl::PointCloud<pcl::PointXYZI> &dst) {
+    dst.points.clear();
+    for (const auto &pt: src.points){
+        pcl::PointXYZI pt_xyzi;
+        pt_xyzi.x = pt.x;
+        pt_xyzi.y = pt.y;
+        pt_xyzi.z = pt.z;
+        pt_xyzi.intensity = pt.intensity;
+        dst.points.push_back(pt_xyzi);
     }
 }
 
@@ -195,7 +210,7 @@ int main(int argc, char **argv) {
     nh.param<bool>("/stop_for_each_frame", stop_for_each_frame, false);
     nh.param<int>("/init_idx", init_idx, 0);
     nh.param<string>("/output_csvpath", output_csvpath, "/data/");
-    nh.param<string>("/data_path", data_path, "/data/");
+    nh.param<string>("/data_path", data_path, "/");
 
     CloudPublisher = nh.advertise<sensor_msgs::PointCloud2>("/benchmark/cloud", 100, true);
     TPPublisher    = nh.advertise<sensor_msgs::PointCloud2>("/benchmark/TP", 100, true);
@@ -222,12 +237,15 @@ int main(int argc, char **argv) {
     } else if (algorithm == "cascaded_gseg") {
         cascaded_gseg.reset(new CascadedGroundSeg(&nh));
         cout << "CascadedSeg init. complete" << endl;
+    } else if (algorithm == "urban_road_filter") {
+        urban_road_filt.reset(new Detector(&nh));
+        cout << "UrbanRoadFilter init. complete" << endl;
     }
 
     string HOME = std::getenv("HOME");
 
     output_csvpath = HOME + output_csvpath + algorithm + "_";
-    data_path      = HOME + data_path + "/" + seq;
+    data_path      = data_path + "/" + seq;
 
     KittiLoader loader(data_path);
 
@@ -256,10 +274,37 @@ int main(int argc, char **argv) {
         } else if (algorithm == "patchwork") {
             cout << "Operating patchwork..." << endl;
             patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+        } else if (algorithm == "urban_road_filter") {
+//            pcl::PointCloud<pcl::PointXYZI> pc_curr_tmp;
+//            xyzilid2xyzi(pc_curr, pc_curr_tmp);
+            pc_ground.clear();
+            pc_non_ground.clear();
+
+            cout << "Operating urban_road_filter..." << endl;
+            urban_road_filt->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            for (size_t i = 0; i < pc_curr.size(); i++) {
+                const auto &pt = pc_curr.points[i];
+                for (size_t j=0; j< pc_ground.size(); j++) {
+                    const auto &pt_g = pc_ground.points[j];
+                    if (pt.x == pt_g.x && pt.y == pt_g.y && pt.z == pt_g.z ) {
+                        pc_ground.points[j]=pt; //pc_ground.points.emplace_back(pt);
+                        break;
+                    }
+                    //else pc_non_ground.points.emplace_back(pt);
+                }
+                for (size_t j=0; j< pc_non_ground.size(); j++) {
+                    const auto &pt_g = pc_non_ground.points[j];
+                    if (pt.x == pt_g.x && pt.y == pt_g.y && pt.z == pt_g.z ) {
+                        pc_non_ground.points[j] = pt; //pc_ground.points.emplace_back(pt);
+                        break;
+                    }
+                }
+            }
+            //cout<<" ground "<< pc_ground.size()<<" | nonground "<<pc_non_ground.size() <<endl;
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
-            cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
             pc_curr.points.clear();
             pc_curr = pc_ground + pc_non_ground;
             int num2 = (int) pc_curr.size();
@@ -290,6 +335,8 @@ int main(int argc, char **argv) {
         static double      precision, recall, precision_wo_veg, recall_wo_veg;
         static vector<int> TPFNs; // TP, FP, FN, TF order
         static vector<int> TPFNs_wo_veg; // TP, FP, FN, TF order
+
+       // cout<<" ground "<< pc_ground.size()<<" | nonground "<<pc_non_ground.size() <<endl;
         calculate_precision_recall(pc_curr, pc_ground, precision, recall, TPFNs);
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
         //calculate_precision_recall(pc_curr, pc_ground, precision_naive, recall_naive, false);

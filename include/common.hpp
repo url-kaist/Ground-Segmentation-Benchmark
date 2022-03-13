@@ -84,15 +84,15 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZILID,
 
 
 void PointXYZILID2XYZI(pcl::PointCloud<PointXYZILID>& src,
-                       pcl::PointCloud<pcl::PointXYZI>::Ptr dst){
-  dst->points.clear();
+                       pcl::PointCloud<pcl::PointXYZI>& dst){
+  dst.points.clear();
   for (const auto &pt: src.points){
     pcl::PointXYZI pt_xyzi;
     pt_xyzi.x = pt.x;
     pt_xyzi.y = pt.y;
     pt_xyzi.z = pt.z;
     pt_xyzi.intensity = pt.intensity;
-    dst->points.push_back(pt_xyzi);
+    dst.points.push_back(pt_xyzi);
   }
 }
 std::vector<int> outlier_classes = {UNLABELED, OUTLIER};
@@ -206,6 +206,8 @@ void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
     if (reject_num_of_outliers){
         int num_outliers_est = count_num_outliers(ground_estimated);
         int num_outliers_gt = count_num_outliers(pc_curr);
+        cout<<"est size: "<<ground_estimated.size()<<" | num TP: "<<num_TP<<endl;
+        cout<<"num_ground_est: "<<num_ground_est<<" | outlier est: "<<num_outliers_est<<endl;
         num_FP = (num_ground_est - num_outliers_est) - num_TP;
         num_FN = num_ground_gt - num_TP;
         num_TF = (pc_curr.points.size() - num_outliers_gt) - (num_TP + num_FP + num_FN);
