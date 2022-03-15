@@ -20,6 +20,7 @@
 #include <pcl/registration/transforms.h>
 #include <vector>
 //#include "GaussianFloorSegmentationParams.h"
+#include <pcl/filters/filter_indices.h>
 
 #include <pcl/filters/conditional_removal.h>
 #include <pcl/io/pcd_io.h>
@@ -119,6 +120,7 @@ struct LinCell
     std::vector<int> obs_indices;
     std::vector<int> drv_indices;
     std::vector<int> ground_indices;
+    std::vector<int> nonground_indices;
 
     int prototype_index;
     int cluster_assigned;
@@ -178,9 +180,14 @@ public:
         this->keep_drv_ = v;
     }
 
+    void setNegative(bool neg)
+    {
+        this->neg_ = neg;
+    }
+
 //    explicit GaussianFloorSegmentation(const GaussianFloorSegmentationParams& config);
 
-    void applyFilter(PointCloud& output);// override;
+    void applyFilter(PointCloud& output); //override;
 
 private:
     void genPolarBinGrid();
@@ -196,12 +203,14 @@ private:
 
     PolarBinGrid     polar_bin_grid;
     std::vector<int> ground_indices;
+    std::vector<int> nonground_indices;
     std::vector<int> obs_indices;
     std::vector<int> drv_indices;
 
     bool keep_ground_;
     bool keep_obs_;
     bool keep_drv_;
+    bool neg_;
 };
 
 //}  // namespace pcl
@@ -519,20 +528,23 @@ private:
                 }
                 else
                 {
+                    this->nonground_indices.push_back(j);
+                    cur_cell.nonground_indices.push_back(j);
+
                     // check drivability
-                    if (h > this->params.robot_height_)
-                    {
-                        // @todo repetitive code
-                        this->drv_indices.push_back(j);
-                        cur_cell.drv_indices.push_back(j);
-                    }
-                    else
-                    {
-                        this->obs_indices.push_back(j);
-                        cur_cell.obs_indices.push_back(j);
-                        obs_sum += Eigen::Vector3d(cur_point.x, cur_point.y, cur_point.z);
-                        num_obs++;
-                    }
+//                    if (h > this->params.robot_height_)
+//                    {
+//                        // @todo repetitive code
+//                        this->drv_indices.push_back(j);
+//                        cur_cell.drv_indices.push_back(j);
+//                    }
+//                    else
+//                    {
+//                        this->obs_indices.push_back(j);
+//                        cur_cell.obs_indices.push_back(j);
+//                        obs_sum += Eigen::Vector3d(cur_point.x, cur_point.y, cur_point.z);
+//                        num_obs++;
+//                    }
                 }
             }
             // mean of obs points
@@ -591,19 +603,22 @@ private:
 
         // Copy the points the user wants
         std::vector<int> out_indices;
+        //std::vector<int> non_indices;
         if (this->keep_ground_)
         {
             out_indices = this->ground_indices;
+            //non_indices = this->nonground_indices;
         }
-        if (this->keep_obs_)
-        {
-            out_indices.insert(out_indices.end(), this->obs_indices.begin(), this->obs_indices.end());
-        }
-        if (this->keep_drv_)
-        {
-            out_indices.insert(out_indices.end(), this->drv_indices.begin(), this->drv_indices.end());
-        }
+//        if (this->keep_obs_)
+//        {
+//            out_indices.insert(out_indices.end(), this->obs_indices.begin(), this->obs_indices.end());
+//        }
+//        if (this->keep_drv_)
+//        {
+//            out_indices.insert(out_indices.end(), this->drv_indices.begin(), this->drv_indices.end());
+//        }
         pcl::copyPointCloud(*this->input_, out_indices, output);
+        //pcl::copyPointCloud(*this->input_, non_indices, non_output);
     }
 
     template <typename PointT>
@@ -636,6 +651,7 @@ private:
 
         ros::NodeHandle nh;
         pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&nh);//{params};
+        pcl::GaussianFloorSegmentation<PointXYZILID> non_ground_segmentation(&nh);//{params};
 
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
         ground_segmentation.setInputCloud(cloudInput);
@@ -644,15 +660,19 @@ private:
         ground_segmentation.setKeepObstacle(false);
         ground_segmentation.setKeepOverHanging(false);
         ground_segmentation.filter(*cloud_filtered);
+        cloudOut = *cloud_filtered;
 
+        non_ground_segmentation.setInputCloud(cloudInput);
+
+        non_ground_segmentation.setKeepGround(true);
+        ground_segmentation.setKeepObstacle(false);
+        non_ground_segmentation.setKeepOverHanging(false);
+        non_ground_segmentation.setNegative(false);
+        non_ground_segmentation.filter(*cloud_up);
 
         std::cout << "filtered cloud size: "<<cloud_filtered->size()<<endl;
 
-
-        cloudOut = *cloud_filtered;
-
-        //std::cerr << "Ground cloud after filtering: " << std::endl;
-        //std::cerr << *cloud_filtered << std::endl;
+        cloudNonground = *cloud_up;
 
         auto end = chrono::high_resolution_clock::now();
         time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
