@@ -303,7 +303,7 @@ void Detector::filtered( pcl::PointCloud<PointXYZILID> &cloudIn_xyzilid,
 
     auto filterCondition = boost::make_shared<FilteringCondition<pcl::PointXYZI>>(
             [=](const pcl::PointXYZI& point){
-                return point.z <= (-1.8*params::sensor_height) ; //params::max_Z;
+                return point.z <= params::max_Z; //(-1.8*params::sensor_height) ; //params::max_Z;
             }
     );
     pcl::ConditionalRemoval<pcl::PointXYZI> condition_removal;
