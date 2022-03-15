@@ -168,6 +168,10 @@ public:
     {
         this->neg_ = neg;
     }
+    void setKeepOrganized(bool v)
+    {
+        this->org_ = v;
+    }
 
     void applyFilter(PointCloud& output); //override;
 
@@ -187,6 +191,7 @@ private:
     std::vector<int> ground_indices;
     bool keep_ground_;
     bool neg_;
+    bool org_;
 };
 
     double wrapTo360(double euler_angle)
@@ -546,6 +551,7 @@ private:
         cloudOut = *cloud_filtered;
 
         ground_segmentation.setNegative(true);
+        ground_segmentation.setKeepGround(false);
         ground_segmentation.filter(*cloud_nonground);
         cloudNonground = *cloud_nonground;
 
