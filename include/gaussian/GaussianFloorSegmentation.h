@@ -19,7 +19,6 @@
 #include <pcl/point_types.h>
 #include <pcl/registration/transforms.h>
 #include <vector>
-//#include "GaussianFloorSegmentationParams.h"
 #include <pcl/filters/filter_indices.h>
 
 #include <pcl/filters/conditional_removal.h>
@@ -59,7 +58,7 @@ namespace pcl
             p_tdata_  = 5;
             p_tg_     = 0.3;
 
-            robot_height_    = 1.2;
+            robot_height_    = 1.723; //1.2;
             max_seed_range_  = 50;
             max_seed_height_ = 3;
         }
@@ -117,15 +116,10 @@ struct LinCell
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     //
     std::vector<int> bin_indices;
-    std::vector<int> obs_indices;
-    std::vector<int> drv_indices;
     std::vector<int> ground_indices;
-    std::vector<int> nonground_indices;
 
     int prototype_index;
     int cluster_assigned;
-
-    Eigen::Vector3d obs_mean;
 };
 
 struct AngCell
@@ -170,22 +164,10 @@ public:
         this->keep_ground_ = v;
     }
 
-    void setKeepObstacle(bool v)
-    {
-        this->keep_obs_ = v;
-    }
-
-    void setKeepOverHanging(bool v)
-    {
-        this->keep_drv_ = v;
-    }
-
     void setNegative(bool neg)
     {
         this->neg_ = neg;
     }
-
-//    explicit GaussianFloorSegmentation(const GaussianFloorSegmentationParams& config);
 
     void applyFilter(PointCloud& output); //override;
 
@@ -203,20 +185,10 @@ private:
 
     PolarBinGrid     polar_bin_grid;
     std::vector<int> ground_indices;
-    std::vector<int> nonground_indices;
-    std::vector<int> obs_indices;
-    std::vector<int> drv_indices;
-
     bool keep_ground_;
-    bool keep_obs_;
-    bool keep_drv_;
     bool neg_;
 };
 
-//}  // namespace pcl
-//
-//namespace pcl
-//{
     double wrapTo360(double euler_angle)
     {
         if (euler_angle > 0)
@@ -236,14 +208,11 @@ private:
     }
 
     template <typename PointT>
-    GaussianFloorSegmentation<PointT>::GaussianFloorSegmentation(ros::NodeHandle* nh)//const GaussianFloorSegmentationParams& config)
-         //   : params{config}
+    GaussianFloorSegmentation<PointT>::GaussianFloorSegmentation(ros::NodeHandle* nh)
     {
         this->initializePolarBinGrid();
 
         keep_ground_ = true;
-        keep_obs_    = false;
-        keep_drv_    = false;
     }
 
     template <typename PointT>
@@ -506,10 +475,6 @@ private:
             }
         }  // end INSAC
 
-        // fill in the ground and obs pointclouds
-        double          num_obs = 0;
-        Eigen::Vector3d obs_sum(0, 0, 0);
-
         for (int i = 0; i < (int)current_model.size(); i++)
         {
             int   currIdx  = current_model[i].index;
@@ -526,68 +491,7 @@ private:
                     this->ground_indices.push_back(j);
                     cur_cell.ground_indices.push_back(j);
                 }
-                else
-                {
-                    this->nonground_indices.push_back(j);
-                    cur_cell.nonground_indices.push_back(j);
-
-                    // check drivability
-//                    if (h > this->params.robot_height_)
-//                    {
-//                        // @todo repetitive code
-//                        this->drv_indices.push_back(j);
-//                        cur_cell.drv_indices.push_back(j);
-//                    }
-//                    else
-//                    {
-//                        this->obs_indices.push_back(j);
-//                        cur_cell.obs_indices.push_back(j);
-//                        obs_sum += Eigen::Vector3d(cur_point.x, cur_point.y, cur_point.z);
-//                        num_obs++;
-//                    }
-                }
             }
-            // mean of obs points
-            // @todo is this unused?
-            cur_cell.obs_mean = obs_sum / num_obs;
-        }
-
-        // FIXME: Why is f_s < SIGPTR SOMETIMES?
-        int i;
-        if (sufficient_model)
-        {
-            // add all the obs points from the non ground classified pts
-            for (i = 0; i < (int)sig_points.size(); i++)
-            {
-                auto& cur_cell = polar_bin_grid.ang_cells[sector_index].lin_cell[sig_points[i].index];
-
-                for (const auto j : cur_cell.bin_indices)
-                {
-                    const auto& cur_point = (*this->input_)[j];
-                    float       h         = std::abs(cur_point.z - f_s(i));
-                    // check drivability
-                    if (h > this->params.robot_height_)
-                    {
-                        // @todo repetitive code
-                        this->drv_indices.push_back(j);
-                        cur_cell.drv_indices.push_back(j);
-                    }
-                    else
-                    {
-                        this->obs_indices.push_back(j);
-                        cur_cell.obs_indices.push_back(j);
-                        cur_cell.obs_indices.push_back(j);
-                        obs_sum += Eigen::Vector3d{cur_point.x, cur_point.y, cur_point.z};
-                        num_obs++;
-                    }
-                }
-                // mean of obs points @todo is this unused?
-                cur_cell.obs_mean = obs_sum / num_obs;
-            }
-        }
-        else
-        {
-            std::cout << "WARNING:Insufficient Model for angular slice" << std::endl;
         }
     }
 
@@ -600,25 +504,10 @@ private:
         {
             this->sectorINSAC(i);
         }
-
         // Copy the points the user wants
         std::vector<int> out_indices;
-        //std::vector<int> non_indices;
-        if (this->keep_ground_)
-        {
-            out_indices = this->ground_indices;
-            //non_indices = this->nonground_indices;
-        }
-//        if (this->keep_obs_)
-//        {
-//            out_indices.insert(out_indices.end(), this->obs_indices.begin(), this->obs_indices.end());
-//        }
-//        if (this->keep_drv_)
-//        {
-//            out_indices.insert(out_indices.end(), this->drv_indices.begin(), this->drv_indices.end());
-//        }
+        out_indices = this->ground_indices;
         pcl::copyPointCloud(*this->input_, out_indices, output);
-        //pcl::copyPointCloud(*this->input_, non_indices, non_output);
     }
 
     template <typename PointT>
@@ -627,15 +516,10 @@ private:
                          pcl::PointCloud<PointXYZILID> &cloudNonground,
                          double &time_taken)
     {
-        pcl::PointCloud<PointXYZILID>::Ptr cloud(new pcl::PointCloud<PointXYZILID>);
-        pcl::PointCloud<PointXYZILID>::Ptr cloud_filtered(new pcl::PointCloud<PointXYZILID>);
-        pcl::PointCloud<PointXYZILID>::Ptr cloud_up(new pcl::PointCloud<PointXYZILID>);
-
         pcl::PointIndicesPtr ground(new pcl::PointIndices);
 
-        std::cout << "cloud before filtering: "<<cloudIn.size()<<endl;
-
-//        std::cerr << "Cloud before filtering: " << cloud->points.size() << std::endl;
+        pcl::PointCloud<PointXYZILID>::Ptr cloud_filtered(new pcl::PointCloud<PointXYZILID>);
+        pcl::PointCloud<PointXYZILID>::Ptr cloud_nonground(new pcl::PointCloud<PointXYZILID>);
 
         pcl::PointCloud<PointXYZILID> nonground_points;
         pcl::PointCloud<PointXYZILID> ground_points;
@@ -644,35 +528,28 @@ private:
         nonground_points.reserve(200000);
         ground_points.reserve(200000);
 
-        auto start = chrono::high_resolution_clock::now();
-
         // Create the filtering object
         pcl::GaussianFloorSegmentationParams params;
 
+        auto start = chrono::high_resolution_clock::now();
+
         ros::NodeHandle nh;
         pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&nh);//{params};
-        pcl::GaussianFloorSegmentation<PointXYZILID> non_ground_segmentation(&nh);//{params};
+        //pcl::GaussianFloorSegmentation<PointXYZILID> non_ground_segmentation(&nh);//{params};
 
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
-        ground_segmentation.setInputCloud(cloudInput);
+        std::cout << "cloud before filtering: "<<cloudInput->size()<<endl;
 
+        ground_segmentation.setInputCloud(cloudInput);
         ground_segmentation.setKeepGround(true);
-        ground_segmentation.setKeepObstacle(false);
-        ground_segmentation.setKeepOverHanging(false);
         ground_segmentation.filter(*cloud_filtered);
         cloudOut = *cloud_filtered;
 
-        non_ground_segmentation.setInputCloud(cloudInput);
+        ground_segmentation.setNegative(true);
+        ground_segmentation.filter(*cloud_nonground);
+        cloudNonground = *cloud_nonground;
 
-        non_ground_segmentation.setKeepGround(true);
-        ground_segmentation.setKeepObstacle(false);
-        non_ground_segmentation.setKeepOverHanging(false);
-        non_ground_segmentation.setNegative(false);
-        non_ground_segmentation.filter(*cloud_up);
-
-        std::cout << "filtered cloud size: "<<cloud_filtered->size()<<endl;
-
-        cloudNonground = *cloud_up;
+        std::cout << "ground: "<<cloud_filtered->size()<<" | nonground: "<<cloud_nonground->size()<<endl;
 
         auto end = chrono::high_resolution_clock::now();
         time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
