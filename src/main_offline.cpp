@@ -15,6 +15,7 @@
 #include "patchwork/patchwork.hpp"
 #include "cascadedseg/cascaded_groundseg.hpp"
 #include "linefit/ground_segmentation.h"
+#include "gaussian/GaussianFloorSegmentation.h"
 #include "urban_road_filter/data_structures.hpp"
 
 #include <gseg_benchmark/LidarFiltersConfig.h>
@@ -39,6 +40,7 @@ boost::shared_ptr<RansacGPF>         ransac_gpf;
 boost::shared_ptr<PatchWork>         patchwork;
 boost::shared_ptr<CascadedGroundSeg> cascaded_gseg;
 boost::shared_ptr<Detector>          urban_road_filt;
+boost::shared_ptr<pcl::GaussianFloorSegmentation<PointXYZILID>> gaussian;
 
 std::string acc_filename, pcd_savepath;
 string      algorithm;
@@ -240,6 +242,9 @@ int main(int argc, char **argv) {
     } else if (algorithm == "urban_road_filter") {
         urban_road_filt.reset(new Detector(&nh));
         cout << "UrbanRoadFilter init. complete" << endl;
+    } else if (algorithm == "gaussian") {
+        gaussian.reset(new pcl::GaussianFloorSegmentation<PointType>(&nh));
+        cout << "Guassian Floor Segmentation init. complete" << endl;
     }
 
     string HOME = std::getenv("HOME");
@@ -281,7 +286,7 @@ int main(int argc, char **argv) {
             pc_non_ground.clear();
 
             cout << "Operating urban_road_filter..." << endl;
-            //cout<<"input pc size: "<<pc_curr.points.size()<<endl;
+            cout<<"input pc size: "<<pc_curr.points.size()<<endl;
             urban_road_filt->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
             for (size_t i = 0; i < pc_curr.size(); i++) {
                 const auto &pt = pc_curr.points[i];
@@ -302,6 +307,10 @@ int main(int argc, char **argv) {
                 }
             }
             //cout<<" ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size() <<endl;
+        } else if (algorithm == "gaussian") {
+            cout << "Operating gaussian..." << endl;
+
+            gaussian->estimate_ground(pc_curr,pc_ground, pc_non_ground,time_taken);
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
