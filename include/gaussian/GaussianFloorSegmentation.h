@@ -551,7 +551,6 @@ private:
         cloudOut = *cloud_filtered;
 
         ground_segmentation.setNegative(true);
-        ground_segmentation.setKeepGround(false);
         ground_segmentation.filter(*cloud_nonground);
         cloudNonground = *cloud_nonground;
 
