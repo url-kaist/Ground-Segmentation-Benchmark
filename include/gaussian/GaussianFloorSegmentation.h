@@ -12,13 +12,16 @@
 #ifndef GAUSSIAN_FLOOR_SEGMENTATION_H_
 #define GAUSSIAN_FLOOR_SEGMENTATION_H_
 
+
 #include <math.h>
+#include <pcl/point_types.h>
+#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/filters/filter.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <pcl/registration/transforms.h>
 #include <vector>
+
 #include <pcl/filters/filter_indices.h>
 
 #include <pcl/filters/conditional_removal.h>
@@ -30,6 +33,7 @@
 #include <Eigen/StdVector>
 
 #include <ros/ros.h>
+#include "../common.hpp"
 
 namespace pcl
 {
@@ -168,10 +172,9 @@ public:
     {
         this->neg_ = neg;
     }
-    void setKeepOrganized(bool v)
-    {
-        this->org_ = v;
-    }
+    void searchNonground(pcl::PointCloud<PointXYZILID> &cloudIn,
+                         pcl::PointCloud<PointXYZILID> &cloudGround,
+                         pcl::PointCloud<PointXYZILID> &cloudOut) ;
 
     void applyFilter(PointCloud& output); //override;
 
@@ -533,15 +536,13 @@ private:
         nonground_points.reserve(200000);
         ground_points.reserve(200000);
 
+        ros::NodeHandle nh;
+        pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&nh);
+
         // Create the filtering object
         pcl::GaussianFloorSegmentationParams params;
 
         auto start = chrono::high_resolution_clock::now();
-
-        ros::NodeHandle nh;
-        pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&nh);//{params};
-        //pcl::GaussianFloorSegmentation<PointXYZILID> non_ground_segmentation(&nh);//{params};
-
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
         std::cout << "cloud before filtering: "<<cloudInput->size()<<endl;
 
@@ -550,15 +551,49 @@ private:
         ground_segmentation.filter(*cloud_filtered);
         cloudOut = *cloud_filtered;
 
-        ground_segmentation.setNegative(true);
-        ground_segmentation.filter(*cloud_nonground);
-        cloudNonground = *cloud_nonground;
-
-        std::cout << "ground: "<<cloud_filtered->size()<<" | nonground: "<<cloud_nonground->size()<<endl;
-
         auto end = chrono::high_resolution_clock::now();
         time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
+
+        ground_segmentation.searchNonground(cloudIn, cloudOut, cloudNonground);
+        std::cout << "ground: "<<cloud_filtered->size()<<" | nonground: "<<cloud_nonground->size()<<endl;
     }
+
+    template <typename PointT>
+    void GaussianFloorSegmentation<PointT>::searchNonground(pcl::PointCloud<PointXYZILID> &cloudIn,
+                                                            pcl::PointCloud<PointXYZILID> &cloudGround,
+                                                            pcl::PointCloud<PointXYZILID> &cloudOut)
+    {
+        pcl::KdTreeFLANN<PointXYZILID> kdtree;
+        std::vector<int> idxes_tmp;
+        std::vector<int> idxes;
+        std::vector<float> sqr_dists;
+
+        int i;
+        float th_dist = 0.001;
+
+        int N = cloudIn.size();
+        auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
+        kdtree.setInputCloud(cloudInput);  //
+
+        for (const auto &basic_point: cloudGround.points) {
+            idxes_tmp.clear();
+            sqr_dists.clear();
+            kdtree.nearestKSearch(basic_point, N, idxes_tmp, sqr_dists);
+            for ( i = 0 ; i < idxes_tmp.size() ; i++ ) {
+                if ( sqr_dists[i] < th_dist ) {
+                    idxes.push_back(idxes_tmp[i]);
+                }
+            }
+        }
+        for ( i = 0 ; i < cloudIn.size() ; i++ ) {
+            auto it = find(idxes.begin(),idxes.end(),i);
+            if(it == idxes.end()){              //can't find index->non ground
+                cloudOut.push_back(cloudIn.points[i]);
+            }
+        }
+
+    }
+
 
 }  // namespace pcl
 
