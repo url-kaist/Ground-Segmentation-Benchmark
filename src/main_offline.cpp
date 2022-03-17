@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
     output_csvpath = HOME + output_csvpath + algorithm + "_";
     data_path      = data_path + "/" + seq;
 
-    KittiLoader loader(data_path);
+    KittiLoader loader(newdata_path);
 
     int      N = loader.size();
     for (int n = init_idx; n < N; ++n) {
@@ -265,6 +265,8 @@ int main(int argc, char **argv) {
         pcl::PointCloud<PointType> pc_non_ground;
         pc_ground.reserve(150000);
         pc_non_ground.reserve(150000);
+
+        std::cout << "cloud before filtering: "<<pc_curr.size()<<endl;
 
         static double time_taken;
         if (algorithm == "gpf") {
@@ -280,13 +282,9 @@ int main(int argc, char **argv) {
             cout << "Operating patchwork..." << endl;
             patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "urban_road_filter") {
-//            pcl::PointCloud<pcl::PointXYZI> pc_curr_tmp;
-//            xyzilid2xyzi(pc_curr, pc_curr_tmp);
             pc_ground.clear();
             pc_non_ground.clear();
-
             cout << "Operating urban_road_filter..." << endl;
-            cout<<"input pc size: "<<pc_curr.points.size()<<endl;
             urban_road_filt->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
             for (size_t i = 0; i < pc_curr.size(); i++) {
                 const auto &pt = pc_curr.points[i];
@@ -306,11 +304,9 @@ int main(int argc, char **argv) {
                     }
                 }
             }
-            //cout<<" ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size() <<endl;
         } else if (algorithm == "gaussian") {
             cout << "Operating gaussian..." << endl;
-
-            gaussian->estimate_ground(pc_curr,pc_ground, pc_non_ground,time_taken);
+            gaussian->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
@@ -346,7 +342,7 @@ int main(int argc, char **argv) {
         static vector<int> TPFNs; // TP, FP, FN, TF order
         static vector<int> TPFNs_wo_veg; // TP, FP, FN, TF order
 
-       // cout<<" ground "<< pc_ground.size()<<" | nonground "<<pc_non_ground.size() <<endl;
+        cout<<"ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size()<<endl;
         calculate_precision_recall(pc_curr, pc_ground, precision, recall, TPFNs);
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
         //calculate_precision_recall(pc_curr, pc_ground, precision_naive, recall_naive, false);

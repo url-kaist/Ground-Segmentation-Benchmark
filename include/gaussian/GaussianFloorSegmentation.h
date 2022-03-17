@@ -16,6 +16,7 @@
 #include <math.h>
 #include <pcl/point_types.h>
 #include <pcl/kdtree/kdtree_flann.h>
+//#include "kdtree_flann.h"
 #include <pcl/filters/filter.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
@@ -107,38 +108,38 @@ namespace pcl
         double max_seed_height_;
     };
 
-struct SignalPoint
-{
-    double range;
-    double height;
-    int    index;
-    bool   is_ground;
-};
+    struct SignalPoint
+    {
+        double range;
+        double height;
+        int    index;
+        bool   is_ground;
+    };
 
-struct LinCell
-{
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    //
-    std::vector<int> bin_indices;
-    std::vector<int> ground_indices;
+    struct LinCell
+    {
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        //
+        std::vector<int> bin_indices;
+        std::vector<int> ground_indices;
 
-    int prototype_index;
-    int cluster_assigned;
-};
+        int prototype_index;
+        int cluster_assigned;
+    };
 
-struct AngCell
-{
-    std::vector<SignalPoint> sig_points;
+    struct AngCell
+    {
+        std::vector<SignalPoint> sig_points;
 
-    std::vector<LinCell, Eigen::aligned_allocator<LinCell>> lin_cell;
+        std::vector<LinCell, Eigen::aligned_allocator<LinCell>> lin_cell;
 
-    std::vector<pcl::PointXY> range_height_signal;
-};
+        std::vector<pcl::PointXY> range_height_signal;
+    };
 
-struct PolarBinGrid
-{
-    std::vector<AngCell, Eigen::aligned_allocator<AngCell>> ang_cells;
-};
+    struct PolarBinGrid
+    {
+        std::vector<AngCell, Eigen::aligned_allocator<AngCell>> ang_cells;
+    };
 
 /**
  * @brief Gaussian process-based ground segmentation filter for point cloud data.
@@ -149,53 +150,53 @@ struct PolarBinGrid
  *
  * @tparam PointT
  */
-template <typename PointT>
-class GaussianFloorSegmentation : public pcl::Filter<PointT>
-{
-public:
-    GaussianFloorSegmentation(){};
-    GaussianFloorSegmentation(ros::NodeHandle* nh) ;
-
-    void estimate_ground(pcl::PointCloud<PointXYZILID> &cloudIn,
-                         pcl::PointCloud<PointXYZILID> &cloudOut,
-                         pcl::PointCloud<PointXYZILID> &cloudNonground,
-                         double &time_taken);
-
-    using PointCloud = typename pcl::Filter<PointT>::PointCloud;
-
-    void setKeepGround(bool v)
+    template <typename PointT>
+    class GaussianFloorSegmentation : public pcl::Filter<PointT>
     {
-        this->keep_ground_ = v;
-    }
+    public:
+        GaussianFloorSegmentation(){};
+        GaussianFloorSegmentation(ros::NodeHandle* nh) ;
 
-    void setNegative(bool neg)
-    {
-        this->neg_ = neg;
-    }
-    void searchNonground(pcl::PointCloud<PointXYZILID> &cloudIn,
-                         pcl::PointCloud<PointXYZILID> &cloudGround,
-                         pcl::PointCloud<PointXYZILID> &cloudOut) ;
+        void estimate_ground(pcl::PointCloud<PointXYZILID> &cloudIn,
+                             pcl::PointCloud<PointXYZILID> &cloudOut,
+                             pcl::PointCloud<PointXYZILID> &cloudNonground,
+                             double &time_taken);
 
-    void applyFilter(PointCloud& output); //override;
+        using PointCloud = typename pcl::Filter<PointT>::PointCloud;
 
-private:
-    void genPolarBinGrid();
+        void setKeepGround(bool v)
+        {
+            this->keep_ground_ = v;
+        }
 
-    void initializePolarBinGrid();
+        void setNegative(bool neg)
+        {
+            this->neg_ = neg;
+        }
+        void searchNonground(pcl::PointCloud<PointXYZILID> &cloudIn,
+                             pcl::PointCloud<PointXYZILID> &cloudGround,
+                             pcl::PointCloud<PointXYZILID> &cloudOut) ;
 
-    void sectorINSAC(int);
+        void applyFilter(PointCloud& output); //override;
 
-    Eigen::MatrixXd genGPModel(std::vector<SignalPoint>& ps1, std::vector<SignalPoint>& ps2, float sig_f, float p_l);
+    private:
+        void genPolarBinGrid();
 
-private:
-    GaussianFloorSegmentationParams params;
+        void initializePolarBinGrid();
 
-    PolarBinGrid     polar_bin_grid;
-    std::vector<int> ground_indices;
-    bool keep_ground_;
-    bool neg_;
-    bool org_;
-};
+        void sectorINSAC(int);
+
+        Eigen::MatrixXd genGPModel(std::vector<SignalPoint>& ps1, std::vector<SignalPoint>& ps2, float sig_f, float p_l);
+
+    private:
+        GaussianFloorSegmentationParams params;
+
+        PolarBinGrid     polar_bin_grid;
+        std::vector<int> ground_indices;
+        bool keep_ground_;
+        bool neg_;
+        bool org_;
+    };
 
     double wrapTo360(double euler_angle)
     {
@@ -520,9 +521,9 @@ private:
 
     template <typename PointT>
     void GaussianFloorSegmentation<PointT>::estimate_ground(pcl::PointCloud<PointXYZILID> &cloudIn,
-                         pcl::PointCloud<PointXYZILID> &cloudOut,
-                         pcl::PointCloud<PointXYZILID> &cloudNonground,
-                         double &time_taken)
+                                                            pcl::PointCloud<PointXYZILID> &cloudOut,
+                                                            pcl::PointCloud<PointXYZILID> &cloudNonground,
+                                                            double &time_taken)
     {
         pcl::PointIndicesPtr ground(new pcl::PointIndices);
 
@@ -544,7 +545,6 @@ private:
 
         auto start = chrono::high_resolution_clock::now();
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
-        std::cout << "cloud before filtering: "<<cloudInput->size()<<endl;
 
         ground_segmentation.setInputCloud(cloudInput);
         ground_segmentation.setKeepGround(true);
@@ -555,7 +555,6 @@ private:
         time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
 
         ground_segmentation.searchNonground(cloudIn, cloudOut, cloudNonground);
-        std::cout << "ground: "<<cloud_filtered->size()<<" | nonground: "<<cloud_nonground->size()<<endl;
     }
 
     template <typename PointT>
@@ -571,14 +570,14 @@ private:
         int i;
         float th_dist = 0.001;
 
-        int N = cloudIn.size();
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
-        kdtree.setInputCloud(cloudInput);  //
+        kdtree.setInputCloud(cloudInput);
 
         for (const auto &basic_point: cloudGround.points) {
             idxes_tmp.clear();
             sqr_dists.clear();
-            kdtree.nearestKSearch(basic_point, N, idxes_tmp, sqr_dists);
+            kdtree.nearestKSearch(basic_point, 5, idxes_tmp, sqr_dists);
+
             for ( i = 0 ; i < idxes_tmp.size() ; i++ ) {
                 if ( sqr_dists[i] < th_dist ) {
                     idxes.push_back(idxes_tmp[i]);
@@ -593,7 +592,6 @@ private:
         }
 
     }
-
 
 }  // namespace pcl
 
