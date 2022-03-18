@@ -90,46 +90,52 @@ namespace pcl
     class GaussianFloorSegmentation : public pcl::Filter<PointT>
     {
     public:
-        GaussianFloorSegmentation(){};
+        GaussianFloorSegmentation(){ };
         GaussianFloorSegmentation(ros::NodeHandle *nh) : node_handle_(*nh) {
-//            node_handle_.param("/sensor_height", sensor_height_, 1.723);
-            node_handle_.param("/gaussian/robot_height", robot_height_, 1.723);
-            ROS_INFO("Robot Height: %f", robot_height_);
-
+            node_handle_.param("/sensor_height", sensor_height_, 1.723);
             node_handle_.param("/gaussian/rmax", rmax_, 100.0);
-            ROS_INFO("Rmx: %f", rmax_);
 
             node_handle_.param("/gaussian/max_bin_points",max_bin_points_, 200);
-            ROS_INFO("Max_Bin_Points: %d", max_bin_points_);
             node_handle_.param("/gaussian/num_seed_points", num_seed_points_, 10);
-            ROS_INFO("Num_Seed_Points: %d", num_seed_points_);
 
             node_handle_.param("/gaussian/num_bins_a", num_bins_a_, 72);
-            ROS_INFO("Num_Bin_a: %d", num_bins_a_);
             node_handle_.param("/gaussian/num_bins_l", num_bins_l_, 200);
-            ROS_INFO("Num_Bin_l: %d", num_bins_l_);
 
             node_handle_.param("/gaussian/p_l", p_l_, (float)30.0);
-            ROS_INFO("p_l: %f", p_l_);
             node_handle_.param("/gaussian/p_sf", p_sf_, (float)1.0);
-            ROS_INFO("p_sf: %f", p_sf_);
             node_handle_.param("/gaussian/p_sn", p_sn_, (float)0.3);
-            ROS_INFO("p_sn: %f", p_sn_);
             node_handle_.param("/gaussian/p_tmodel", p_tmodel_, (float)5.0);
-            ROS_INFO("p_tmodel: %f", p_tmodel_);
             node_handle_.param("/gaussian/p_tdata", p_tdata_, (float)5.0);
-            ROS_INFO("p_tdata: %f", p_tdata_);
             node_handle_.param("/gaussian/p_tg", p_tg_, (float)0.3);
-            ROS_INFO("p_tg: %f", p_tg_);
 
+            node_handle_.param("/gaussian/robot_height", robot_height_, 1.723);
             node_handle_.param("/gaussian/max_seed_range", max_seed_range_, 50.0);
-            ROS_INFO("max_seed_range: %f", max_seed_range_);
             node_handle_.param("/gaussian/max_seed_height", max_seed_height_, 3.0);
-            ROS_INFO("max_seed_height: %f", max_seed_height_);
 
             this->initializePolarBinGrid();
             keep_ground_ = true;
         };
+        void print_rosparam(ros::NodeHandle *nh){
+            ROS_INFO("Sensor Height: %f", sensor_height_);
+            ROS_INFO("Rmx: %f", rmax_);
+
+            ROS_INFO("Max_Bin_Points: %d", max_bin_points_);
+            ROS_INFO("Num_Seed_Points: %d", num_seed_points_);
+
+            ROS_INFO("Num_Bin_a: %d", num_bins_a_);
+            ROS_INFO("Num_Bin_l: %d", num_bins_l_);
+
+            ROS_INFO("p_l: %f", p_l_);
+            ROS_INFO("p_sf: %f", p_sf_);
+            ROS_INFO("p_sn: %f", p_sn_);
+            ROS_INFO("p_tmodel: %f", p_tmodel_);
+            ROS_INFO("p_tdata: %f", p_tdata_);
+            ROS_INFO("p_tg: %f", p_tg_);
+
+            ROS_INFO("Robot Height: %f", robot_height_);
+            ROS_INFO("max_seed_range: %f", max_seed_range_);
+            ROS_INFO("max_seed_height: %f", max_seed_height_);
+        }
 
         void estimate_ground(pcl::PointCloud<PointXYZILID> &cloudIn,
                              pcl::PointCloud<PointXYZILID> &cloudOut,
@@ -179,11 +185,11 @@ namespace pcl
         float p_tdata_;   // scaled value that is required for a query point to be considered ground
         float p_tg_;      // ground height threshold
 
-        double sensor_height_;
         double robot_height_; // Height the robot (m), used to distinguish "drivable" overhanging points
         double max_seed_range_;
         double max_seed_height_;
-//        GaussianFloorSegmentationParams params;
+
+        double sensor_height_;
 
         PolarBinGrid     polar_bin_grid;
         std::vector<int> ground_indices;
@@ -527,12 +533,10 @@ namespace pcl
         // Create the filtering object
         pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&node_handle_);
 
-        // Create the filtering object
-//        pcl::GaussianFloorSegmentationParams params;
-
         auto start = chrono::high_resolution_clock::now();
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
 
+        //search ground
         ground_segmentation.setInputCloud(cloudInput);
         ground_segmentation.setKeepGround(true);
         ground_segmentation.filter(*cloud_filtered);
@@ -541,6 +545,7 @@ namespace pcl
         auto end = chrono::high_resolution_clock::now();
         time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
 
+        //search non ground with kdtree flann
         ground_segmentation.searchNonground(cloudIn, cloudOut, cloudNonground);
     }
 
@@ -563,13 +568,19 @@ namespace pcl
         for (const auto &basic_point: cloudGround.points) {
             idxes_tmp.clear();
             sqr_dists.clear();
-            kdtree.nearestKSearch(basic_point, 5, idxes_tmp, sqr_dists);
 
-            for ( i = 0 ; i < idxes_tmp.size() ; i++ ) {
-                if ( sqr_dists[i] < th_dist ) {
-                    idxes.push_back(idxes_tmp[i]);
-                }
+            //using radiusSearch
+            kdtree.radiusSearch(basic_point, th_dist, idxes_tmp, sqr_dists);
+            for (auto i : idxes_tmp){
+                idxes.push_back(i);
             }
+            //using nearestKSearch
+//            kdtree.nearestKSearch(basic_point, 5, idxes_tmp, sqr_dists);
+//            for ( i = 0 ; i < idxes_tmp.size() ; i++ ) {
+//                if ( sqr_dists[i] < th_dist ) {
+//                    idxes.push_back(idxes_tmp[i]);
+//                }
+//            }
         }
         for ( i = 0 ; i < cloudIn.size() ; i++ ) {
             auto it = find(idxes.begin(),idxes.end(),i);

@@ -244,6 +244,7 @@ int main(int argc, char **argv) {
         cout << "UrbanRoadFilter init. complete" << endl;
     } else if (algorithm == "gaussian") {
         gaussian.reset(new pcl::GaussianFloorSegmentation<PointType>(&nh));
+        gaussian->print_rosparam(&nh);
         cout << "Guassian Floor Segmentation init. complete" << endl;
     }
 
@@ -266,7 +267,7 @@ int main(int argc, char **argv) {
         pc_ground.reserve(150000);
         pc_non_ground.reserve(150000);
 
-        std::cout << "cloud before filtering: "<<pc_curr.size()<<endl;
+//        std::cout << "cloud before filtering: "<<pc_curr.size()<<endl;
 
         static double time_taken;
         if (algorithm == "gpf") {
@@ -342,7 +343,7 @@ int main(int argc, char **argv) {
         static vector<int> TPFNs; // TP, FP, FN, TF order
         static vector<int> TPFNs_wo_veg; // TP, FP, FN, TF order
 
-        cout<<"ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size()<<endl;
+//        cout<<"ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size()<<endl;
         calculate_precision_recall(pc_curr, pc_ground, precision, recall, TPFNs);
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
         //calculate_precision_recall(pc_curr, pc_ground, precision_naive, recall_naive, false);
