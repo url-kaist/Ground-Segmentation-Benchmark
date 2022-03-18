@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
     output_csvpath = HOME + output_csvpath + algorithm + "_";
     data_path      = data_path + "/" + seq;
 
-    KittiLoader loader(newdata_path);
+    KittiLoader loader(data_path);
 
     int      N = loader.size();
     for (int n = init_idx; n < N; ++n) {

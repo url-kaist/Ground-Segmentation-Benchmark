@@ -36,6 +36,9 @@
 #include <jsk_recognition_msgs/PolygonArray.h>
 #include <visualization_msgs/Marker.h>
 
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/kdtree/kdtree_flann.h>
+
 #define SENSOR_HEIGHT 1.73
 
 #define UNLABELED 0

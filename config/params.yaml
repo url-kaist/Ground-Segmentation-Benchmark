@@ -79,3 +79,18 @@ linefit:
     latch: false            # latch output topics or not
     visualize: false        # visualize segmentation result - USE ONLY FOR DEBUGGING
 
+gaussian:
+    rmax: 100
+    max_bin_points: 200
+    num_seed_points: 10
+    num_bins_a: 72
+    num_bins_l: 200
+    p_l: 30.0
+    p_sf: 1
+    p_sn: 0.3
+    p_tmodel: 5
+    p_tdata: 5
+    p_tg: 0.3
+    robot_height: 1.723
+    max_seed_range: 50
+    max_seed_height: 3

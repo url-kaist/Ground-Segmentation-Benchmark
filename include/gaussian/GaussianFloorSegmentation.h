@@ -16,7 +16,7 @@
 #include <math.h>
 #include <pcl/point_types.h>
 #include <pcl/kdtree/kdtree_flann.h>
-//#include "kdtree_flann.h"
+
 #include <pcl/filters/filter.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
@@ -43,70 +43,6 @@ namespace pcl
  *
  * @{
  */
-
-    struct GaussianFloorSegmentationParams
-    {
-        // set default parameters
-        GaussianFloorSegmentationParams()
-        {
-            rmax_            = 100;
-            max_bin_points_  = 200;
-            num_seed_points_ = 10;
-
-            num_bins_a_ = 72;
-            num_bins_l_ = 200;
-            // GP model
-            p_l_      = 30;
-            p_sf_     = 1;
-            p_sn_     = 0.3;
-            p_tmodel_ = 5;
-            p_tdata_  = 5;
-            p_tg_     = 0.3;
-
-            robot_height_    = 1.723; //1.2;
-            max_seed_range_  = 50;
-            max_seed_height_ = 3;
-        }
-
-        GaussianFloorSegmentationParams(double rmax, int max_bin_points, int num_seed_points, int num_bins_a,
-                                        int num_bins_l, float p_l, float p_sf, float p_sn, float p_tmodel, float p_tdata,
-                                        float p_tg, double robot_height, double max_seed_range, double max_seed_height)
-                : rmax_(rmax)
-                , max_bin_points_(max_bin_points)
-                , num_seed_points_(num_seed_points)
-                , num_bins_a_(num_bins_a)
-                , num_bins_l_(num_bins_l)
-                , p_l_(p_l)
-                , p_sf_(p_sf)
-                , p_sn_(p_sn)
-                , p_tmodel_(p_tmodel)
-                , p_tdata_(p_tdata)
-                , p_tg_(p_tg)
-                , robot_height_(robot_height)
-                , max_seed_range_(max_seed_range)
-                , max_seed_height_(max_seed_height)
-        {
-        }
-
-        double rmax_;  // max radius of point to consider.
-
-        int max_bin_points_;  // max number of points to consider per bin.
-        int num_seed_points_;
-
-        int num_bins_a_; // number of devided(by angle) bins. number_bins_devided_by_angle_
-        int num_bins_l_; // number of devided(by range) bins. number_bins_devided_by_range_
-
-        float p_l_;       // length parameter, how close points have to be in the GP model to correlate them
-        float p_sf_;      // scaling on the whole covariance function
-        float p_sn_;      // the expected noise for the mode
-        float p_tmodel_;  // the required confidence required in order to consider
-        float p_tdata_;   // scaled value that is required for a query point to be considered ground
-        float p_tg_;      // ground height threshold
-
-        double robot_height_;  // Height the robot (m), used to distinguish "drivable" overhanging points
-        double max_seed_range_;
-        double max_seed_height_;
-    };
 
     struct SignalPoint
     {
@@ -155,7 +91,45 @@ namespace pcl
     {
     public:
         GaussianFloorSegmentation(){};
-        GaussianFloorSegmentation(ros::NodeHandle* nh) ;
+        GaussianFloorSegmentation(ros::NodeHandle *nh) : node_handle_(*nh) {
+//            node_handle_.param("/sensor_height", sensor_height_, 1.723);
+            node_handle_.param("/gaussian/robot_height", robot_height_, 1.723);
+            ROS_INFO("Robot Height: %f", robot_height_);
+
+            node_handle_.param("/gaussian/rmax", rmax_, 100.0);
+            ROS_INFO("Rmx: %f", rmax_);
+
+            node_handle_.param("/gaussian/max_bin_points",max_bin_points_, 200);
+            ROS_INFO("Max_Bin_Points: %d", max_bin_points_);
+            node_handle_.param("/gaussian/num_seed_points", num_seed_points_, 10);
+            ROS_INFO("Num_Seed_Points: %d", num_seed_points_);
+
+            node_handle_.param("/gaussian/num_bins_a", num_bins_a_, 72);
+            ROS_INFO("Num_Bin_a: %d", num_bins_a_);
+            node_handle_.param("/gaussian/num_bins_l", num_bins_l_, 200);
+            ROS_INFO("Num_Bin_l: %d", num_bins_l_);
+
+            node_handle_.param("/gaussian/p_l", p_l_, (float)30.0);
+            ROS_INFO("p_l: %f", p_l_);
+            node_handle_.param("/gaussian/p_sf", p_sf_, (float)1.0);
+            ROS_INFO("p_sf: %f", p_sf_);
+            node_handle_.param("/gaussian/p_sn", p_sn_, (float)0.3);
+            ROS_INFO("p_sn: %f", p_sn_);
+            node_handle_.param("/gaussian/p_tmodel", p_tmodel_, (float)5.0);
+            ROS_INFO("p_tmodel: %f", p_tmodel_);
+            node_handle_.param("/gaussian/p_tdata", p_tdata_, (float)5.0);
+            ROS_INFO("p_tdata: %f", p_tdata_);
+            node_handle_.param("/gaussian/p_tg", p_tg_, (float)0.3);
+            ROS_INFO("p_tg: %f", p_tg_);
+
+            node_handle_.param("/gaussian/max_seed_range", max_seed_range_, 50.0);
+            ROS_INFO("max_seed_range: %f", max_seed_range_);
+            node_handle_.param("/gaussian/max_seed_height", max_seed_height_, 3.0);
+            ROS_INFO("max_seed_height: %f", max_seed_height_);
+
+            this->initializePolarBinGrid();
+            keep_ground_ = true;
+        };
 
         void estimate_ground(pcl::PointCloud<PointXYZILID> &cloudIn,
                              pcl::PointCloud<PointXYZILID> &cloudOut,
@@ -179,7 +153,6 @@ namespace pcl
 
         void applyFilter(PointCloud& output); //override;
 
-    private:
         void genPolarBinGrid();
 
         void initializePolarBinGrid();
@@ -189,13 +162,35 @@ namespace pcl
         Eigen::MatrixXd genGPModel(std::vector<SignalPoint>& ps1, std::vector<SignalPoint>& ps2, float sig_f, float p_l);
 
     private:
-        GaussianFloorSegmentationParams params;
+        ros::NodeHandle node_handle_;
+
+        double rmax_;  // max radius of point to consider.
+
+        int max_bin_points_;  // max number of points to consider per bin.
+        int num_seed_points_;
+
+        int num_bins_a_; // number of divided(by angle) bins. number_bins_divided_by_angle_
+        int num_bins_l_; // number of divided(by range) bins. number_bins_divided_by_range_
+
+        float p_l_;       // length parameter, how close points have to be in the GP model to correlate them
+        float p_sf_;      // scaling on the whole covariance function
+        float p_sn_;      // the expected noise for the mode
+        float p_tmodel_;  // the required confidence required in order to consider
+        float p_tdata_;   // scaled value that is required for a query point to be considered ground
+        float p_tg_;      // ground height threshold
+
+        double sensor_height_;
+        double robot_height_; // Height the robot (m), used to distinguish "drivable" overhanging points
+        double max_seed_range_;
+        double max_seed_height_;
+//        GaussianFloorSegmentationParams params;
 
         PolarBinGrid     polar_bin_grid;
         std::vector<int> ground_indices;
         bool keep_ground_;
         bool neg_;
         bool org_;
+
     };
 
     double wrapTo360(double euler_angle)
@@ -217,28 +212,20 @@ namespace pcl
     }
 
     template <typename PointT>
-    GaussianFloorSegmentation<PointT>::GaussianFloorSegmentation(ros::NodeHandle* nh)
-    {
-        this->initializePolarBinGrid();
-
-        keep_ground_ = true;
-    }
-
-    template <typename PointT>
     void GaussianFloorSegmentation<PointT>::initializePolarBinGrid()
     {
         this->polar_bin_grid.ang_cells.clear();
-        this->polar_bin_grid.ang_cells.resize(this->params.num_bins_a_);
+        this->polar_bin_grid.ang_cells.resize(num_bins_a_);
 
-        for (int i = 0; i < this->params.num_bins_a_; i++)
+        for (int i = 0; i < num_bins_a_; i++)
         {
             auto& ang_cell = this->polar_bin_grid.ang_cells[i];
 
-            ang_cell.lin_cell.resize(this->params.num_bins_l_);
-            ang_cell.sig_points.resize(this->params.num_bins_l_);
-            ang_cell.range_height_signal.resize(this->params.num_bins_l_);
+            ang_cell.lin_cell.resize(num_bins_l_);
+            ang_cell.sig_points.resize(num_bins_l_);
+            ang_cell.range_height_signal.resize(num_bins_l_);
 
-            for (int j = 0; j < this->params.num_bins_l_; j++)
+            for (int j = 0; j < num_bins_l_; j++)
             {
                 ang_cell.lin_cell[j].prototype_index  = -1;
                 ang_cell.range_height_signal[j].x     = NAN;
@@ -253,8 +240,8 @@ namespace pcl
     {
         this->initializePolarBinGrid();
 
-        double     bsize_rad  = (double)((360.0) / this->params.num_bins_a_);
-        double     bsize_lin  = (double)this->params.rmax_ / this->params.num_bins_l_;
+        double     bsize_rad  = (double)((360.0) / num_bins_a_);
+        double     bsize_lin  = (double)rmax_ / num_bins_l_;
         const auto num_points = this->input_->size();
         for (auto i = 0u; i < num_points; ++i)
         {
@@ -263,7 +250,7 @@ namespace pcl
             const auto& py        = cur_point.y;
             const auto& pz        = cur_point.z;
 
-            if (sqrt(px * px + py * py + pz * pz) < this->params.rmax_)
+            if (sqrt(px * px + py * py + pz * pz) < rmax_)
             {
                 double ph = (atan2(py, px)) * (180 / M_PI);  // in degrees
                 ph        = wrapTo360(ph);
@@ -279,7 +266,7 @@ namespace pcl
                 this->polar_bin_grid.ang_cells[bind_rad].lin_cell[bind_lin].bin_indices.push_back(i);
                 // add the point to the bin
                 // check the prototype point
-                auto& prototype_index = polar_bin_grid.ang_cells[bind_rad].lin_cell[bind_lin].prototype_index;
+                auto& prototype_index = this->polar_bin_grid.ang_cells[bind_rad].lin_cell[bind_lin].prototype_index;
                 if (prototype_index < 0 || pz < (*this->input_)[prototype_index].z)  // smallest by z
                 {
                     prototype_index                                                          = i;
@@ -315,25 +302,25 @@ namespace pcl
     template <typename PointT>
     void GaussianFloorSegmentation<PointT>::sectorINSAC(int sector_index)
     {
-        if (sector_index >= this->params.num_bins_a_)
+        if (sector_index >= num_bins_a_)
         {
             return;
         }
         int num_filled = 0;
 
         // pull out the valid points from the sector
-        auto& sig_points = polar_bin_grid.ang_cells[sector_index].sig_points;
+        auto& sig_points = this->polar_bin_grid.ang_cells[sector_index].sig_points;
         sig_points.clear();
-        for (int i = 0; i < this->params.num_bins_l_; i++)
+        for (int i = 0; i < num_bins_l_; i++)
         {
-            if (!std::isnan(polar_bin_grid.ang_cells[sector_index].range_height_signal[i].x) &&
-                this->polar_bin_grid.ang_cells[sector_index].lin_cell[i].bin_indices.size() > 5)
+            if (!std::isnan(this->polar_bin_grid.ang_cells[sector_index].range_height_signal[i].x) &&
+                    this->polar_bin_grid.ang_cells[sector_index].lin_cell[i].bin_indices.size() > 5)
             {
                 // bin has a valid point, and enough points to make a good
                 // guess for a protopoint
                 SignalPoint new_point;
-                new_point.range  = polar_bin_grid.ang_cells[sector_index].range_height_signal[i].x;
-                new_point.height = polar_bin_grid.ang_cells[sector_index].range_height_signal[i].y;
+                new_point.range  = this->polar_bin_grid.ang_cells[sector_index].range_height_signal[i].x;
+                new_point.height = this->polar_bin_grid.ang_cells[sector_index].range_height_signal[i].y;
                 new_point.index  = i;
                 sig_points.push_back(new_point);
                 num_filled++;
@@ -341,12 +328,11 @@ namespace pcl
         }
         // get the seed points.  Select the 3 lowest points.  Sort based on height values
         sort(sig_points.begin(), sig_points.end(), compareSignalPoints);
-
         // now that the z points are sorted by height, take the
         // this->params.num_seed_points worth as the seed
-        size_t num_points = sig_points.size() < static_cast<size_t>(this->params.num_seed_points_) ?
+        size_t num_points = sig_points.size() < static_cast<size_t>(num_seed_points_) ?
                             sig_points.size() :
-                            static_cast<size_t>(this->params.num_seed_points_);
+                            static_cast<size_t>(num_seed_points_);
 
         std::vector<SignalPoint> current_model;
 
@@ -362,8 +348,8 @@ namespace pcl
                 break;
             }
 
-            if (sig_points[curr_idx].range < this->params.max_seed_range_ &&
-                fabs(sig_points[curr_idx].height) < this->params.max_seed_height_)
+            if (sig_points[curr_idx].range < max_seed_range_ &&
+                fabs(sig_points[curr_idx].height) < max_seed_height_)
             {
                 // close enough to robot and height make sense in robot locality
                 sig_points[curr_idx].is_ground = true;
@@ -403,16 +389,17 @@ namespace pcl
         Eigen::MatrixXd temp;
         Eigen::MatrixXd f_s;
         Eigen::MatrixXd Vf_s;
+
         while (keep_going)
         {
             // generate the covariance matrices
-            C_XsX  = genGPModel(sig_points, current_model, this->params.p_sf_, this->params.p_l_);
-            C_XX   = genGPModel(current_model, current_model, this->params.p_sf_, this->params.p_l_);
-            C_XsXs = genGPModel(sig_points, sig_points, this->params.p_sf_, this->params.p_l_);
+            C_XsX  = genGPModel(sig_points, current_model, p_sf_, p_l_);
+            C_XX   = genGPModel(current_model, current_model, p_sf_, p_l_);
+            C_XsXs = genGPModel(sig_points, sig_points, p_sf_, p_l_);
             C_XXs  = C_XsX.transpose();
 
             // temporary calc
-            Eigen::MatrixXd temp_calc1 = C_XX + (this->params.p_sn_ * Eigen::MatrixXd::Identity(C_XX.rows(), C_XX.cols()));
+            Eigen::MatrixXd temp_calc1 = C_XX + (p_sn_ * Eigen::MatrixXd::Identity(C_XX.rows(), C_XX.cols()));
             Eigen::MatrixXd temp_calc2 = C_XsX * temp_calc1.inverse();
 
             // test the points against the current model
@@ -440,9 +427,9 @@ namespace pcl
             while (search_candidate_points)
             {
                 double vf  = Vf_s(k, k);
-                double met = (sig_points[k].height - f_s(k)) / (sqrt(this->params.p_sn_ + vf * vf));
+                double met = (sig_points[k].height - f_s(k)) / (sqrt(p_sn_ + vf * vf));
 
-                if (vf < this->params.p_tmodel_ && std::abs(met) < this->params.p_tdata_)
+                if (vf < p_tmodel_ && std::abs(met) < p_tdata_)
                 {  // we have an inlier! add to model set
                     current_model.push_back(sig_points[k]);
                     // remove from sample set
@@ -495,7 +482,7 @@ namespace pcl
                 const auto& cur_point = (*this->input_)[j];
 
                 float h = std::abs(current_model[i].height - cur_point.z);
-                if (h < this->params.p_tg_)  // z heights are close
+                if (h < p_tg_)  // z heights are close
                 {
                     this->ground_indices.push_back(j);
                     cur_cell.ground_indices.push_back(j);
@@ -509,7 +496,7 @@ namespace pcl
     {
         // Do the work and fill the indices vectors
         this->genPolarBinGrid();
-        for (int i = 0; i < this->params.num_bins_a_; ++i)
+        for (int i = 0; i < num_bins_a_; ++i)
         {
             this->sectorINSAC(i);
         }
@@ -537,11 +524,11 @@ namespace pcl
         nonground_points.reserve(200000);
         ground_points.reserve(200000);
 
-        ros::NodeHandle nh;
-        pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&nh);
+        // Create the filtering object
+        pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&node_handle_);
 
         // Create the filtering object
-        pcl::GaussianFloorSegmentationParams params;
+//        pcl::GaussianFloorSegmentationParams params;
 
         auto start = chrono::high_resolution_clock::now();
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);

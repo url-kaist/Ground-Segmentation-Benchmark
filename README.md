@@ -1,4 +1,4 @@
-# Ground Segmentation Benchmark 
+_# Ground Segmentation Benchmark 
 
 All the baseline methods are organized.
 
@@ -133,5 +133,13 @@ rosparam set /init_idx 0
 * launch 파일 간소화하기
 * 해당 알고리즘에 대한 rviz 파일을 따로 생성하길 권장
 
-
-
+### 에러
+if the following error occurs
+```
+/usr/include/flann/util/serialization.h:35:14: error: ‘class std::unordered_map<unsigned int, std::vector<unsigned int> >’ has no member named ‘serialize’
+```
+then run
+```asm
+$ sudo gedit /usr/include/flann/util/serialization.h
+```
+and change all terms of "map" into "unordered_map".
