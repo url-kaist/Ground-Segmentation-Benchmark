@@ -70,13 +70,6 @@
 //BOOST
 #include <boost/thread.hpp>
 
-//OpenGL
-#include <GL/glew.h>
-#include <GL/glut.h>
-#include <GL/freeglut.h>
-
-#include "grid.h"
-
 //namespace ground_mapping {
 //	//Taken from <velodyne_pointcloud/point_types.h>
 //	/** Euclidean Velodyne coordinate, including intensity and ring number. */
@@ -96,14 +89,13 @@
 //                                (float, intensity, intensity)
 //                                (uint16_t, ring, ring))
 
-#define USE_GL_VBO 1
 #define PBO_COUNT 2
 namespace ground_mapping {
 	class Mapping {
 		public:
 			Mapping();
+            Mapping(ros::NodeHandle *nh);
 			~Mapping();
-			void init(int argc, char* argv[]);
 			void deInit();
 			void loop();
 			void rosLoop();
@@ -111,47 +103,15 @@ namespace ground_mapping {
 		public:
 			static Mapping *instance;
 
-		public:
-			//wrappers for OpenGL
-			static void resizeFuncWrapper(int w, int h);
-			static void keyboardFuncWrapper(unsigned char key, int x, int y);
-			static void specialKeyFuncWrapper(int key, int x, int y);
-			static void mouseWheelFuncWrapper(int wheel, int direction, int x, int y);
-			static void mouseFuncWrapper(int button, int state, int x, int y);
-			static void displayFuncWrapper();
-			static void idleFuncWrapper();
-			//static void velodyneCallbackFuncWrapper(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& msg);
-			void loadDepthImage(const std::string filename);
-			void saveDepthImage(GLfloat *buffer_src, const std::string filename, bool asPFM=true);
-
-
 		protected:
 			void setInstance();
 			void loadAllParameters();
-			void initDepthBuffers();
-			void resize(int w, int h);
-			void keyboard(unsigned char key, int x, int y);
-			void special_key(int key, int x, int y);
-			void mouse_wheel(int wheel, int direction, int x, int y);
-			void mouse(int button, int state, int x, int y);
-			void display();
-			void idle();
-			void glutFunctions(int argc,char* argv[]);
-			void init_fb(unsigned int id);
-			int showdepth(void);
-			void raycastPointCloud();
-			void prepareViewport(bool dm_changed, int xc, int yc);
+
 			bool checkSwitchDM(int &xc, int &yc, int &x1, int &y1);
 
-			void saveImage();
-			void loadImage(double curr_x, double curr_y, double curr_z, bool reload=false);
-			void displayDepthData();
-			void genGroundPointCloud();
 			void obsSegmentation();
 			void velodyneCallback(const pcl::PointCloud<velodyne_pointcloud::PointXYZIR>::ConstPtr &msg);
-			void savePointCloud(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& ptcloud);
-			void publishGroundPointCloud();
-			void publishObstaclePointCloud();
+
 			void filterPointCloud(const pcl::PointCloud<velodyne_pointcloud::PointXYZIR>::ConstPtr &inCloud,
 								  pcl::PointCloud<velodyne_pointcloud::PointXYZIR>& outCloud,
 								  bool filter_range = false,
@@ -192,6 +152,8 @@ namespace ground_mapping {
 			int stop_program_;
 
 		private:
+            ros::NodeHandle node_handle_;
+
 			template<typename T>
 			friend std::ostream& operator<<(std::ostream& s, const std::vector<T>& v) {
 			    char comma[3] = {'\0', ' ', '\0'};
@@ -208,26 +170,20 @@ namespace ground_mapping {
 			template <class T>
 			static void DoNotFree(T*) {}
 
-			bool isGLExtensionSupported(const std::string& ext);
-			bool checkFramebufferStatus(GLuint fbo);
-
 		private:
 			//Parameters
 			double min_height_;
 			double max_height_;
 			double min_height_offset_;
 			double max_height_offset_;
-			double grid_cell_size_;
-			double grid_width_;
-			double grid_height_;
-			bool generate_grid_data_;
+
 			bool generate_obstacle_data_;
 			bool generate_ground_data_;
-			bool filter_grid_points_;
+
 			double obstacle_height_threshold_;
 			std::string input_pointcloud_topic_;
 			std::string output_pointcloud_topic_;
-			std::string grid_pointcloud_topic_;
+
 			std::string obstacle_pointcloud_topic_;
 			std::string ground_pointcloud_topic_;
 			std::string source_tf_;
@@ -236,7 +192,6 @@ namespace ground_mapping {
 			int filter_input_rings_;
 			bool filter_by_height_;
 			double filter_height_limit_;
-			bool hide_opengl_window_;
 			double max_update_distance_;
 			bool merge_with_past_frame_;
 			bool accumulate_height_;
@@ -252,14 +207,14 @@ namespace ground_mapping {
 			//pcl::PointCloud<velodyne_pointcloud::PointXYZIR> map_;
 			tf::TransformListener *tf_listener_;
 			ros::Publisher depth_ground_pointcloud_pub_;
-			ros::Publisher grid_pointcloud_pub_;
+
 			ros::Publisher obstacle_pointcloud_pub_;
 			ros::Publisher ground_pointcloud_pub_;
 
 			pcl::PointCloud<pcl::PointXYZI> prev_points_;
 			pcl::PointCloud<pcl::PointXYZI> pcl_out_;
 			pcl::PointCloud<pcl::PointXYZI> pcl_depth_ground_;
-			pcl::PointCloud<pcl::PointXYZI> pcl_grid_;
+
 			pcl::PointCloud<pcl::PointXYZI> pcl_obstacles_;
 			pcl::PointCloud<pcl::PointXYZI> pcl_ground_;
 			pcl::PointCloud<pcl::PointXYZI>::ConstPtr pcl_ground_ptr_;
@@ -283,9 +238,6 @@ namespace ground_mapping {
 
 			typedef struct DepthMap{
 				DepthMap() {
-					fb = 0;
-					cb = 0;
-					rb = 0;
 					center_x = 0.0;
 					center_y = 0.0;
 					center_z = 0.0;
@@ -298,11 +250,8 @@ namespace ground_mapping {
 					y1 = 0;
 					x2 = 0;
 					y2 = 0;
-					buffer2 = NULL;
 				}
-				GLuint fb;  //frame buffer
-				GLuint cb;  //color buffer
-				GLuint rb;  //render buffer
+
 				double center_x;   //center position
 				double center_y;
 				double center_z;
@@ -315,7 +264,6 @@ namespace ground_mapping {
 				int y1;
 				int x2;
 				int y2;
-				GLfloat *buffer2;
 			} DepthMap;
 
 			DepthMap depthmap_[10];
@@ -364,16 +312,8 @@ namespace ground_mapping {
 			double total_running_time_;
 			unsigned int loops_count_;
 
-			GLfloat *buffer_;
 			int max_threads_;
 			pcl::PointCloud<pcl::PointXYZI> *pcl_ground_aux_array_;
-
-			Grid grid_;
-
-			GLuint readPBOIDs_[PBO_COUNT];
-			unsigned int pbo_index_;
-			GLuint writePBOIDs_;
-			GLuint displayPBOIDs_;
 
 			bool saving_file_ = false;
 			bool publishing_obst_cloud_ = false;

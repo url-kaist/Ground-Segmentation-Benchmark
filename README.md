@@ -38,10 +38,9 @@ sudo apt-get install ros-melodic-jsk-rviz-plugins
 ```
 * Clone our package with [catkin tools](https://catkin-tools.readthedocs.io/en/latest/)
 ```
-mkdir -p ~/catkin_ws/src
-cd ~/catkin_ws/src
-git clone https://github.com/LimHyungTae/gseg.git (to be changed)
-cd .. && catkin build gseg
+cd catkin_ws/src
+git clone https://github.com/LimHyungTae/gseg.git (can be changed)
+cd .. && catkin build gseg_benchmark
 ```
 
 ## Prepare Dataset
@@ -49,11 +48,11 @@ cd .. && catkin build gseg
 
 ### Offline KITTI dataset
 1. Download [SemanticKITTI](http://www.semantic-kitti.org/dataset.html#download) Odometry dataset including Velodyne point clouds, calibration data, and label data.
-2. Set the `data_path` in `launch/ransac_gpf.launch`(can be changed) for your machine.
+2. Set the `data_path` in `shellscripts/common.sh` for your machine.
 
 The `data_path` consists of `velodyne` folder and `labels` folder as follows:
 ```
-data_path (e.g. 00, 01, ..., or 10)
+data_path
 ______00
     |___labels
         |___000000
@@ -66,11 +65,9 @@ ______00
 ______01
     |___labels
         |___000000
-        |___000001
         |___ ...
     |___velodyne
         |___000000.bin
-        |___000001.bin
         |___ ...
 ```
 
@@ -79,8 +76,6 @@ ______01
 
 ```asm
 $ roscore
-$ cd ${path of Ground-Segmentation-Benchmark}/rviz
-$ rosrun rviz rviz -d ground4r_gpf.rviz
 ```
 
 `shellscripts` 폴더 내의 파일들 참조
@@ -90,10 +85,12 @@ $ rosrun rviz rviz -d ground4r_gpf.rviz
 
 
 ```asm
-$ sudo apt install zsh
-$ cd ${path of nonplanar_gpf}/shellscripts
-$ zsh autosave_gpf.sh
+$ cd ${path of Ground-Segmentation-Benchmark}/launch
+$ roslaunch gseg_benchmarker.launch alg:=${name of algorithm} seq:=${sequence}
 ```
+* There are 7 ground segmentation algorithms provided: `cascaded_gseg`, `gpf`, `r_gpf`, `ransac`, `linefit`, `patchwork`, `gaussian`
+* If you do not set `seq` or set as `seq:=all`, then the csv output files of all datasets from "00" to "10" will be saved automatically.   
+* Rviz result will be shown automatically.
 
 ## Parameters of Benchmark
 
@@ -133,7 +130,7 @@ rosparam set /init_idx 0
 * launch 파일 간소화하기
 * 해당 알고리즘에 대한 rviz 파일을 따로 생성하길 권장
 
-### 에러
+### Errors
 if the following error occurs
 ```
 /usr/include/flann/util/serialization.h:35:14: error: ‘class std::unordered_map<unsigned int, std::vector<unsigned int> >’ has no member named ‘serialize’

@@ -9,6 +9,7 @@
 #include "r_gpf/r_gpf.hpp"
 #include "ransac/ransac_gpf.hpp"
 #include "patchwork/patchwork.hpp"
+#include "gaussian/GaussianFloorSegmentation.h"
 
 using namespace std;
 using namespace unavlib;
@@ -27,6 +28,7 @@ boost::shared_ptr<RegionwiseGPF>     r_gpf;
 boost::shared_ptr<RansacGPF>         ransac_gpf;
 boost::shared_ptr<PatchWork>         sp;
 boost::shared_ptr<CascadedGroundSeg> cascaded_gseg;
+boost::shared_ptr<pcl::GaussianFloorSegmentation<PointXYZILID>> gaussian;
 
 std::string output_filename;
 std::string acc_filename, pcd_savepath;
@@ -100,7 +102,9 @@ void callbackNode(const gseg_benchmark::node::ConstPtr &msg) {
         pc_curr = pc_ground + pc_non_ground;
         int num2 = (int) pc_curr.size();
         cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
-
+    } else if (algorithm == "gaussian") {
+        cout << "Operating gaussian..." <<endl;
+        gaussian->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
     }
     // Estimation
     static double      precision, recall, precision_wo_veg, recall_wo_veg;
@@ -184,6 +188,7 @@ int main(int argc, char **argv) {
     ransac_gpf.reset(new RansacGPF(&nh));
     sp.reset(new PatchWork(&nh));
     cascaded_gseg.reset(new CascadedGroundSeg(&nh));
+    gaussian.reset(new pcl::GaussianFloorSegmentation<PointType>(&nh));
 
     string HOME = std::getenv("HOME");
     output_csvpath = HOME + output_csvpath + algorithm + "_";

@@ -12,28 +12,6 @@
 #ifndef GAUSSIAN_FLOOR_SEGMENTATION_H_
 #define GAUSSIAN_FLOOR_SEGMENTATION_H_
 
-
-#include <math.h>
-#include <pcl/point_types.h>
-#include <pcl/kdtree/kdtree_flann.h>
-
-#include <pcl/filters/filter.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/point_cloud.h>
-#include <pcl/registration/transforms.h>
-#include <vector>
-
-#include <pcl/filters/filter_indices.h>
-
-#include <pcl/filters/conditional_removal.h>
-#include <pcl/io/pcd_io.h>
-#include <chrono>
-
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-#include <Eigen/StdVector>
-
-#include <ros/ros.h>
 #include "../common.hpp"
 
 namespace pcl
@@ -577,7 +555,7 @@ namespace pcl
             //using nearestKSearch
 //            kdtree.nearestKSearch(basic_point, 5, idxes_tmp, sqr_dists);
 //            for ( i = 0 ; i < idxes_tmp.size() ; i++ ) {
-//                if ( sqr_dists[i] < th_dist ) {
+//                if ( sqrt(sqr_dists[i]) < th_dist ) {
 //                    idxes.push_back(idxes_tmp[i]);
 //                }
 //            }
