@@ -6,10 +6,9 @@
 
 #include <sensor_msgs/PointCloud2.h>
 #include <gseg_benchmark/node.h>
-#include <unavlib/convt.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/common/centroid.h>
-
+#include "lib/cvt.h"
 #include "gpf/groundplanefit.hpp"
 #include "r_gpf/r_gpf.hpp"
 #include "ransac/ransac_gpf.hpp"
@@ -24,8 +23,6 @@
 #include <csignal>
 
 using namespace std;
-using namespace unavlib;
-
 
 ros::Publisher CloudPublisher;
 ros::Publisher TPPublisher;
@@ -53,6 +50,7 @@ bool        save_flag;
 bool        use_z_thr;
 bool        save_csv_file;
 bool        stop_for_each_frame;
+bool        show_rviz;
 int         init_idx;
 
 // Utils for linefit algorithm
@@ -211,6 +209,7 @@ int main(int argc, char **argv) {
     nh.param<bool>("/patchwork/use_z_thr", use_z_thr, false);
     nh.param<bool>("/save_csv_file", save_csv_file, false);
     nh.param<bool>("/stop_for_each_frame", stop_for_each_frame, false);
+    nh.param<bool>("/show_rviz", show_rviz, true);
     nh.param<int>("/init_idx", init_idx, 0);
     nh.param<string>("/output_csvpath", output_csvpath, "/data/");
     nh.param<string>("/data_path", data_path, "/");

@@ -3,7 +3,7 @@
 <node name="rqt_conf_gui" pkg="rqt_reconfigure" type="rqt_reconfigure" output="screen"/>
 <node name="$(anon benchmark)" pkg="nonplanar_gpf" type="benchmark" output="screen">
 <rosparam param="/algorithm">"urban_road_filter"</rosparam>
-<rosparam param="/seq">"10"</rosparam># Select among [gpf, r_gpf]
+<rosparam param="/seq">"10"</rosparam>
 <rosparam param="/debug">false</rosparam>
 </node>
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(find nonplanar_gpf)/rviz/ground4r_gpf.rviz"/>

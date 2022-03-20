@@ -6,14 +6,13 @@
 #include <pcl/point_cloud.h>
 #include <pcl/common/transforms.h>
 #include <pcl/io/pcd_io.h>
-#include <unavlib/convt.h>
-#include <unavlib/others.h>
 #include <string>
 #include <map>
 #include <vector>
-#include "common.hpp"
-#include <gseg_benchmark/node.h>
 #include <iostream>
+#include <gseg_benchmark/node.h>
+#include "../lib/cvt.h"
+#include "common.hpp"
 ros::Publisher  UnlabeledPub;
 ros::Publisher  OutlierPub;
 ros::Publisher  RoadPub;
@@ -26,9 +25,6 @@ ros::Publisher  BuildingPub;
 ros::Publisher  FensePub;
 ros::Publisher  VegetationPub;
 ros::Publisher  TrafficSignPub;
-
-using namespace unavlib;
-
 
 void callbackNode(const gseg_benchmark::node::ConstPtr& msg)
 {
@@ -85,7 +81,6 @@ void callbackNode(const gseg_benchmark::node::ConstPtr& msg)
   TrafficSignPub.publish(cvt::cloud2msg(pc_traffic));
   ++count;
 }
-
 
 int main(int argc, char **argv)
 {

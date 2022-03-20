@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
         pcl_ros
         geometry_msgs
         sensor_msgs
-        unavlib
+#        unavlib
         message_generation
         velodyne_pointcloud
         grid_map_ros

@@ -7,7 +7,7 @@
 <param name="/sequence" type="str" value="$(arg seq)" />
 <param name="/debug" value="true" />
 
-<!-- <node name="common_shell" pkg="gseg_benchmark" type="common.sh" output="screen" /> -->
+<node name="common_shell" pkg="gseg_benchmark" type="common.sh" output="screen" />
 <group if="$(eval arg('seq')=='all')">
         <node name="run_script" pkg="gseg_benchmark" type="autosave_$(arg alg).sh" output="screen" />
 </group>
