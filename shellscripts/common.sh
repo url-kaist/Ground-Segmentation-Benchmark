@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "Loading common parameters for ground segmentation benchmark..."
 
-# if you use SSD, then set as absolute path and delete 'HOME' of data_path in main_offline.cpp
+# if you are using SSD, then set as absolute path and delete 'HOME' of data_path in main_offline.cpp
 rosparam set /data_path "/data/SemanticKITTI/"      # path of downloaded KITTI dataset
 
 rosparam set /stop_for_each_frame false             # set as true to make it stop every frame

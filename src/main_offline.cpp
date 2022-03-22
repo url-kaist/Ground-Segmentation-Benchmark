@@ -17,9 +17,6 @@
 #include "linefit/ground_segmentation.h"
 #include "gaussian/GaussianFloorSegmentation.h"
 
-//#include "urban_road_filter/data_structures.hpp"
-//#include <gseg_benchmark/LidarFiltersConfig.h>
-
 #include <csignal>
 
 using namespace std;
@@ -37,7 +34,6 @@ boost::shared_ptr<RegionwiseGPF>     r_gpf;
 boost::shared_ptr<RansacGPF>         ransac_gpf;
 boost::shared_ptr<PatchWork>         patchwork;
 boost::shared_ptr<CascadedGroundSeg> cascaded_gseg;
-//boost::shared_ptr<Detector>          urban_road_filt;
 boost::shared_ptr<pcl::GaussianFloorSegmentation<PointXYZILID>> gaussian;
 
 std::string acc_filename, pcd_savepath;
@@ -241,10 +237,6 @@ int main(int argc, char **argv) {
         gaussian->print_rosparam(&nh);
         cout << "Guassian Floor Segmentation init. complete" << endl;
     }
-//    else if (algorithm == "urban_road_filter") {
-//        urban_road_filt.reset(new Detector(&nh));
-//        cout << "UrbanRoadFilter init. complete" << endl;
-//    }
 
     string HOME = std::getenv("HOME");
 
@@ -309,32 +301,7 @@ int main(int argc, char **argv) {
             }
             auto end = chrono::high_resolution_clock::now();
             time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
-        }
-//        else if (algorithm == "urban_road_filter") {
-//            pc_ground.clear();
-//            pc_non_ground.clear();
-//            cout << "Operating urban_road_filter..." << endl;
-//            urban_road_filt->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-//            for (size_t i = 0; i < pc_curr.size(); i++) {
-//                const auto &pt = pc_curr.points[i];
-//                for (size_t j=0; j< pc_ground.size(); j++) {
-//                    const auto &pt_g = pc_ground.points[j];
-//                    if (pt.x == pt_g.x && pt.y == pt_g.y && pt.z == pt_g.z ) {
-//                        pc_ground.points[j]=pt; //pc_ground.points.emplace_back(pt);
-//                        break;
-//                    }
-//                    //else pc_non_ground.points.emplace_back(pt);
-//                }
-//                for (size_t j=0; j< pc_non_ground.size(); j++) {
-//                    const auto &pt_g = pc_non_ground.points[j];
-//                    if (pt.x == pt_g.x && pt.y == pt_g.y && pt.z == pt_g.z ) {
-//                        pc_non_ground.points[j] = pt; //pc_ground.points.emplace_back(pt);
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-        else {
+        } else {
             throw invalid_argument("The type of algorithm is invalid");
         }
 

@@ -1,4 +1,4 @@
-# Ground Segmentation Benchmarks 
+# Ground Segmentation Benchmark
 
 This repository contains various Ground Segmentation baseline methods. Currently, 7 projects are organized for *SemanticKITTI dataset*:
 
@@ -20,9 +20,9 @@ This repository contains various Ground Segmentation baseline methods. Currently
 
 
 ## Description
-The benchmark provides:
+This benchmark provides:
 ### Performance Calculation
-* This benchmarks calculates the performance of each method and save the results as *csv* files.
+* The benchmark calculates the performance of each method and save the results as *csv* files.
 * The output files contain `frame index - time taken - Precision - Recall - TP - FP - FN - TF` values.
 * Two versions are to be saved: considering vegetation / not considering vegetation.
 
