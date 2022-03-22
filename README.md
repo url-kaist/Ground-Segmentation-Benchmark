@@ -12,7 +12,7 @@ This repository contains various Ground Segmentation baseline methods. Currently
 
 ## Citation
 
-If our open sources have been helpful, please cite the below papers:
+If our open sources have been helpful, please cite the below papers published by our research group:
 ```
 @inproceedings{oh2022travel,
     title={{TRAVEL: Traversable ground and above-ground object segmentation using graph representation of 3D LiDAR scans}},
