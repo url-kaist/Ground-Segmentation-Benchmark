@@ -1,34 +1,52 @@
-# Ground Segmentation Benchmark 
+# Ground Segmentation Benchmark
 
-All the baseline methods are organized.
+This repository contains various Ground Segmentation baseline methods. Currently, 7 projects are organized for *SemanticKITTI dataset*:
 
-## Contributor
+* [GPF](https://github.com/VincentCheungM/Run_based_segmentation) (Ground Plane Fitting)
+* [CascadedSeg](https://github.com/n-patiphon/cascaded_ground_seg)
+* [R-GPF](https://github.com/LimHyungTae/ERASOR) (Region-wise GPF)
+* [LineFit](https://github.com/lorenwel/linefit_ground_segmentation)
+* [Mono plane estimation by RANSAC](https://github.com/jafrado/qhulltest)
+* [Patchwork](https://github.com/LimHyungTae/patchwork) (ver.1)
+* [Gaussian Floor Segmentation](https://github.com/SmallMunich/FloorSegmentation/tree/master/Gaussian_process_based_Real-time_Ground_Segmentation_for_Autonomous_Land_Vehicles)
 
-* Jeewon Kim (as a research intern @ [URL](https://urobot.kaist.ac.kr/)): `ddarong2000@kaist.ac.kr`
-* Hyungtae Lim: `shapelim@kaist.ac.kr`
 
 ## Contents
 
-0. [Test Env.]()
-1. [Requirements]()
-2. [Prepare DataSet]()
-3. [How to Run]()
-4. [Citation]()
+0. [Description](#Description)
+1. [Requirements](#Requirements)
+2. [Preparing DataSet](#Preparing-DataSet)
+3. [Getting Started](#Getting-Started)
 
-## Test Env.
 
-The code is tested successfully at
-* Linux 18.04 LTS
-* ROS Melodic
+## Description
+This benchmark provides:
+### Performance Calculation
+* The benchmark calculates the performance of each method and save the results as *csv* files.
+* The output files contain `frame index - time taken - Precision - Recall - TP - FP - FN - TF` values.
+* Two versions are to be saved: considering vegetation / not considering vegetation.
+
+![Image text](config/materials/seq00_results.png)
+
+### RVIZ
+* It visualizes the ground segmentation result on RVIZ.
+![Image text](config/materials/gpf_rviz.png)
+  * green: *True Positive*
+  * blue: *False Negative*
+  * red: *False Positive*
+
 
 ## Requirements
 
+### Test Environment
+The code wass tested successfully at
+* Linux 18.04 LTS
+* ROS Melodic
 
-### ROS Settings
+### Settings
 
 * Install [ROS](http://wiki.ros.org/melodic/Installation) on a machine
-* unavlib(to be deleted)
-* Install jsk_visualization (For visualization of GLE of Patchwork)
+* Install [jsk_visualization](https://github.com/jsk-ros-pkg/jsk_visualization) (For visualization of GLE of Patchwork)
  
 ```
 sudo apt update
@@ -36,102 +54,87 @@ sudo apt-get install ros-melodic-jsk-recognition
 sudo apt-get install ros-melodic-jsk-common-msgs
 sudo apt-get install ros-melodic-jsk-rviz-plugins
 ```
+* Install [PCL](https://pointclouds.org/downloads/)
+```
+sudo apt-get install libpcl-dev
+```
+
+### Install Package
 * Clone our package with [catkin tools](https://catkin-tools.readthedocs.io/en/latest/)
-```
-mkdir -p ~/catkin_ws/src
-cd ~/catkin_ws/src
-git clone https://github.com/LimHyungTae/gseg.git (to be changed)
-cd .. && catkin build gseg
+```asm
+$ cd catkin_ws/src
+$ git clone https://github.com/LimHyungTae/gseg.git (can be changed)
+$ catkin build gseg_benchmark
 ```
 
-## Prepare Dataset
-
+## Preparing Dataset
 
 ### Offline KITTI dataset
 1. Download [SemanticKITTI](http://www.semantic-kitti.org/dataset.html#download) Odometry dataset including Velodyne point clouds, calibration data, and label data.
-2. Set the `data_path` in `launch/ransac_gpf.launch`(can be changed) for your machine.
+2. Set `data_path` parameter in [shellscripts/common.sh](#Set-Parameters-ofBenchmark) for your machine.
 
 The `data_path` consists of `velodyne` folder and `labels` folder as follows:
 ```
-data_path (e.g. 00, 01, ..., or 10)
-______00
-    |___labels
-        |___000000
-        |___000001
-        |___ ...
-    |___velodyne
-        |___000000.bin
-        |___000001.bin
-        |___ ...
-______01
-    |___labels
-        |___000000
-        |___000001
-        |___ ...
-    |___velodyne
-        |___000000.bin
-        |___000001.bin
-        |___ ...
+data_path
+    |___00
+        |___labels
+        |    |___000000
+        |    |___000001
+        |    |___ ...
+        |___velodyne
+            |___000000.bin
+            |___000001.bin
+            |___ ...
+    |___01
+        |___labels
+        |    |___ ...
+        |___velodyne
+            |___ ...
 ```
 
+## Getting Started
 
-## How to Run 
+### Set Parameters of Benchmark
+* Set parameters about dataset path, running method, saving csv output files in `shellscripts/common.sh`.
+* Make directories to load [SemanticKITTI](#Offline-KITTI-dataset) dataset and save output files and apply them in rosparam setting.
 
+```
+rosparam set /data_path "/data/SemanticKITTI/"      # path of downloaded KITTI dataset
+rosparam set /stop_for_each_frame false             # set as true to make it stop every frame 
+rosparam set /init_idx 0                            # index of first frame to run
+rosparam set /save_csv_file true                    # set as false if csv output files are not needed
+rosparam set /output_csvpath "/data/gpf/"           # path of output files to be generated
+```
+
+###Play Sample Data
+
+* Start roscore:
 ```asm
 $ roscore
-$ cd ${path of Ground-Segmentation-Benchmark}/rviz
-$ rosrun rviz rviz -d ground4r_gpf.rviz
-```
-
-`shellscripts` 폴더 내의 파일들 참조
-
-* 각 .sh 파일로 sequence를 전체 다 저장하는 코드가 있음
-* "'00'"이 그냥 bash shell에서는 숫자로 들어가는데, [Zsh](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH) 에서만 현재 사용 가능
-
-
+``` 
+* Open a new terminal and launch node with specification of algorithm and data sequence:
 ```asm
-$ sudo apt install zsh
-$ cd ${path of nonplanar_gpf}/shellscripts
-$ zsh autosave_gpf.sh
+$ cd ${path of Ground-Segmentation-Benchmark}/launch
+$ roslaunch gseg_benchmark.launch alg:=${name of algorithm} seq:=${sequence}
 ```
+* There are 7 algorithms provided: `gpf`, `cascaded_gseg`, `r_gpf`, `linefit`, `ransac`, `patchwork`, `gaussian`
+* The examples of `seq` are 00, 01, ..., 10
+  * If you do not set `seq` or set as `seq:=all`, then the csv output files of all datasets from "00" to "10" will be saved automatically.   
+* Rviz result will be shown automatically.
 
-## Parameters of Benchmark
+---
+## Contributors
 
+* Hyungtae Lim: `shapelim@kaist.ac.kr`
+* Jeewon Kim (as a research intern @[URL](https://urobot.kaist.ac.kr/)): `ddarong2000@kaist.ac.kr`
+
+## Errors
+If the following error occurs in flann
 ```
-rosparam set /data_path "/data/SemanticKITTI/sequences"
-rosparam set /output_csvpath "/data/patchwork22/"
-rosparam set /stop_for_each_frame true
-rosparam set /save_csv_file true
-rosparam set /init_idx 0
+/usr/include/flann/util/serialization.h:35:14: error: ‘class std::unordered_map<unsigned int, std::vector<unsigned int> >’ has no member named ‘serialize’
 ```
-
-아래의 알고리즘들이 구현되어 있음
-
-* CascadedSeg
-* GPF
-* LineFit
-* Patchwork (ver.1)  
-* R-GPF
-* Mono plane estimation by RANSAC
-
-
-![Image text](config/materials/seq00_results.png)
-
-**RVIZ**는 `ground4r_gpf.rviz` 사용하면 됨!
-
-#### Point label 관련
-* point의 member 변수들은 `utils/common.hpp`에 나와있음: `x, y, z, intensity, label, id`로 구분됨. 여기서 id는 각 object의 아이디임 (본 레포에서는 안 쓰일듯)
-* label은 int로 돼있는데, 각 int가 나타내는 건 [SemanticKITTI API](https://github.com/PRBonn/semantic-kitti-api/blob/master/config/semantic-kitti.yaml)에 나와있음
-* Patchwork에서는 vegetation도 아랫 부분은 ground라고 간주하고 뽑았으나, Patchwork++에서는 그렇지 않음
-
---- 
-
-#### 진행 사항
-
-* **msg의 node.msg는 절대 변경하지 마셈!** 변경하면 bag 파일의 node를 callback 못 받음...bag 파일을 재생성해야 callback을 받을 수 있음
-* 사용하기 용이한 flags들 설정 (변수로?)
-* launch 파일 간소화하기
-* 해당 알고리즘에 대한 rviz 파일을 따로 생성하길 권장
-
-
-
+then open header file
+```
+sudo gedit /usr/include/flann/util/serialization.h
+```
+and change all terms of "map" into "unordered_map".

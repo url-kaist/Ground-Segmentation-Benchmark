@@ -1,15 +1,20 @@
 <launch>
-
 <rosparam command="load" file="$(find gseg_benchmark)/config/params.yaml" />
-<rosparam param="/seq">"00"</rosparam>
 
+<arg name="alg" default="gpf" />
+<arg name="seq" default="all" />
+<param name="/algorithm" value="$(arg alg)" />
+<param name="/sequence" type="str" value="$(arg seq)" />
+<param name="/debug" value="true" />
 
-<node name="$(anon benchmark)" pkg="gseg_benchmark" type="benchmark" output="screen">
-<rosparam param="/algorithm">"patchwork"</rosparam> 
-<rosparam param="/seq">"10"</rosparam> 
-<rosparam param="/debug">true</rosparam> 
-</node>
+<node name="common_shell" pkg="gseg_benchmark" type="common.sh" output="screen" />
+<group if="$(eval arg('seq')=='all')">
+        <node name="run_script" pkg="gseg_benchmark" type="autosave_$(arg alg).sh" output="screen" />
+</group>
+<group unless="$(eval arg('seq')=='all')">
+    <node name="$(anon benchmark)" pkg="gseg_benchmark" type="benchmark_offline" args="$(arg alg) $(arg seq)" output="screen" />
+</group>
+
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gseg_benchmark)/rviz/ground4r_gpf.rviz"/>
-
 
 </launch>

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.0) #3.0.2)
 project(gseg_benchmark)
 
 add_compile_options(-std=c++17)
@@ -19,8 +19,12 @@ find_package(catkin REQUIRED COMPONENTS
         pcl_ros
         geometry_msgs
         sensor_msgs
-        unavlib
+#        unavlib
         message_generation
+        velodyne_pointcloud
+        grid_map_ros
+        grid_map_cv
+        grid_map_msgs
         )
 
 add_message_files(
@@ -53,6 +57,8 @@ include_directories(
         ${PCL_INCLUDE_DIRS}
         include
 )
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 add_executable(classviz src/utils/viz_each_class.cpp include/common.hpp)
 target_link_libraries(classviz ${catkin_LIBRARIES})
@@ -71,6 +77,7 @@ set(alg_source
     include/ransac/ransac_gpf.hpp
     include/patchwork/patchwork.hpp
     include/urban_road_filter/data_structures.hpp
+    include/gaussian/GaussianFloorSegmentation.h
     include/cascadedseg/cascaded_groundseg.hpp
     include/linefit/bin.cc
     include/linefit/ground_segmentation.cc

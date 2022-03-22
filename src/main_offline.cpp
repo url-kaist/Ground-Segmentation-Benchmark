@@ -6,24 +6,20 @@
 
 #include <sensor_msgs/PointCloud2.h>
 #include <gseg_benchmark/node.h>
-#include <unavlib/convt.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/common/centroid.h>
+#include "lib/cvt.h"
 #include "gpf/groundplanefit.hpp"
 #include "r_gpf/r_gpf.hpp"
 #include "ransac/ransac_gpf.hpp"
 #include "patchwork/patchwork.hpp"
 #include "cascadedseg/cascaded_groundseg.hpp"
 #include "linefit/ground_segmentation.h"
-#include "urban_road_filter/data_structures.hpp"
-
-#include <gseg_benchmark/LidarFiltersConfig.h>
+#include "gaussian/GaussianFloorSegmentation.h"
 
 #include <csignal>
 
 using namespace std;
-using namespace unavlib;
-
 
 ros::Publisher CloudPublisher;
 ros::Publisher TPPublisher;
@@ -38,7 +34,7 @@ boost::shared_ptr<RegionwiseGPF>     r_gpf;
 boost::shared_ptr<RansacGPF>         ransac_gpf;
 boost::shared_ptr<PatchWork>         patchwork;
 boost::shared_ptr<CascadedGroundSeg> cascaded_gseg;
-boost::shared_ptr<Detector>          urban_road_filt;
+boost::shared_ptr<pcl::GaussianFloorSegmentation<PointXYZILID>> gaussian;
 
 std::string acc_filename, pcd_savepath;
 string      algorithm;
@@ -221,12 +217,11 @@ int main(int argc, char **argv) {
     std::cout << "\033[1;32mTarget Alg.: " << algorithm << "\033[0m" << std::endl;
 
     // Special: initialization of linefit is different!
-    // ground segmentation하는 안쪽에서 linefit을 매번 선언해줘야 함!
+    // Should declare linefit inside ground segmentation every time
     GroundSegmentationParams linefit_params;
     set_linefit_params(&nh, linefit_params);
 
-    if (algorithm == "gpf") {
-        // /gpf/mode가 "multiple"일 때가 원래 알고리즘임!
+    if (algorithm == "gpf") {           // "multiple" mode is the original gpf algorithm
         gpf.reset(new GroundPlaneFit(&nh));
     } else if (algorithm == "r_gpf") {
         r_gpf.reset(new RegionwiseGPF(&nh));
@@ -237,15 +232,16 @@ int main(int argc, char **argv) {
     } else if (algorithm == "cascaded_gseg") {
         cascaded_gseg.reset(new CascadedGroundSeg(&nh));
         cout << "CascadedSeg init. complete" << endl;
-    } else if (algorithm == "urban_road_filter") {
-        urban_road_filt.reset(new Detector(&nh));
-        cout << "UrbanRoadFilter init. complete" << endl;
+    } else if (algorithm == "gaussian") {
+        gaussian.reset(new pcl::GaussianFloorSegmentation<PointType>(&nh));
+        gaussian->print_rosparam(&nh);
+        cout << "Guassian Floor Segmentation init. complete" << endl;
     }
 
     string HOME = std::getenv("HOME");
 
     output_csvpath = HOME + output_csvpath + algorithm + "_";
-    data_path      = data_path + "/" + seq;
+    data_path      = HOME + data_path + "/" + seq;
 
     KittiLoader loader(data_path);
 
@@ -253,13 +249,15 @@ int main(int argc, char **argv) {
     for (int n = init_idx; n < N; ++n) {
         signal(SIGINT, signal_callback_handler);
 
-        cout << n << "th frame comes" << endl;
+//        cout << n << "th frame comes" << endl;
         pcl::PointCloud<PointType> pc_curr;
         loader.get_cloud(n, pc_curr);
         pcl::PointCloud<PointType> pc_ground;
         pcl::PointCloud<PointType> pc_non_ground;
         pc_ground.reserve(150000);
         pc_non_ground.reserve(150000);
+
+//        std::cout << "cloud before filtering: "<<pc_curr.size()<<endl;
 
         static double time_taken;
         if (algorithm == "gpf") {
@@ -274,34 +272,9 @@ int main(int argc, char **argv) {
         } else if (algorithm == "patchwork") {
             cout << "Operating patchwork..." << endl;
             patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-        } else if (algorithm == "urban_road_filter") {
-//            pcl::PointCloud<pcl::PointXYZI> pc_curr_tmp;
-//            xyzilid2xyzi(pc_curr, pc_curr_tmp);
-            pc_ground.clear();
-            pc_non_ground.clear();
-
-            cout << "Operating urban_road_filter..." << endl;
-            //cout<<"input pc size: "<<pc_curr.points.size()<<endl;
-            urban_road_filt->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-            for (size_t i = 0; i < pc_curr.size(); i++) {
-                const auto &pt = pc_curr.points[i];
-                for (size_t j=0; j< pc_ground.size(); j++) {
-                    const auto &pt_g = pc_ground.points[j];
-                    if (pt.x == pt_g.x && pt.y == pt_g.y && pt.z == pt_g.z ) {
-                        pc_ground.points[j]=pt; //pc_ground.points.emplace_back(pt);
-                        break;
-                    }
-                    //else pc_non_ground.points.emplace_back(pt);
-                }
-                for (size_t j=0; j< pc_non_ground.size(); j++) {
-                    const auto &pt_g = pc_non_ground.points[j];
-                    if (pt.x == pt_g.x && pt.y == pt_g.y && pt.z == pt_g.z ) {
-                        pc_non_ground.points[j] = pt; //pc_ground.points.emplace_back(pt);
-                        break;
-                    }
-                }
-            }
-            //cout<<" ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size() <<endl;
+        } else if (algorithm == "gaussian") {
+            cout << "Operating gaussian..." << endl;
+            gaussian->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
@@ -332,17 +305,19 @@ int main(int argc, char **argv) {
             throw invalid_argument("The type of algorithm is invalid");
         }
 
+        //cout<<"ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size()<<endl;
+
         // Estimation
         static double      precision, recall, precision_wo_veg, recall_wo_veg;
         static vector<int> TPFNs; // TP, FP, FN, TF order
         static vector<int> TPFNs_wo_veg; // TP, FP, FN, TF order
 
-       // cout<<" ground "<< pc_ground.size()<<" | nonground "<<pc_non_ground.size() <<endl;
         calculate_precision_recall(pc_curr, pc_ground, precision, recall, TPFNs);
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
         //calculate_precision_recall(pc_curr, pc_ground, precision_naive, recall_naive, false);
         //calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_naive, recall_naive, false);
 
+        //Print
         cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
         cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
         cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
@@ -379,6 +354,7 @@ int main(int argc, char **argv) {
         // discern_ground(pc_non_ground, FN, TN);
         discern_ground_without_vegetation(pc_non_ground, FN, TN);
 
+        //Print
         cout << "TP: " << TP.points.size();
         cout << " | FP: " << FP.points.size();
         cout << " | TN: " << TN.points.size() << endl;

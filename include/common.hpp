@@ -1,40 +1,51 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include "math.h"
-#include <sstream>
+#include <math.h>
+#include <cmath>
 #include <vector>
 #include <map>
+#include <sstream>
+#include <fstream>
 #include <iostream>
-#include <cmath>
 #include <tf/tf.h>
 #include <chrono>
 
+//PCL
 #include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
 #include <pcl/common/common.h>
 #include <pcl/common/centroid.h>
 #include <pcl/common/transforms.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/registration/transforms.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/filters/filter.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/filter_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/passthrough.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/segmentation/sac_segmentation.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/passthrough.h>
+#include <pcl/kdtree/kdtree.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/io/pcd_io.h>
-#include <ros/ros.h>
-#include <fstream>
+#include <pcl_ros/point_cloud.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+//Eigen
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <Eigen/StdVector>
+
 #include <boost/format.hpp>
 #include <sensor_msgs/PointCloud2.h>
 #include <jsk_recognition_msgs/PolygonArray.h>
 #include <visualization_msgs/Marker.h>
+
+#include <ros/ros.h>
+
 
 #define SENSOR_HEIGHT 1.73
 
@@ -206,7 +217,6 @@ void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
     if (reject_num_of_outliers){
         int num_outliers_est = count_num_outliers(ground_estimated);
         int num_outliers_gt = count_num_outliers(pc_curr);
-        cout<<" outlier est: "<<num_outliers_est<<endl;
         num_FP = (num_ground_est - num_outliers_est) - num_TP;
         num_FN = num_ground_gt - num_TP;
         num_TF = (pc_curr.points.size() - num_outliers_gt) - (num_TP + num_FP + num_FN);

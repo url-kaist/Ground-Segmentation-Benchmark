@@ -1,3 +1,4 @@
+#!/bin/bash
 GSEG_BENCHMARK_PATH=$(rospack find gseg_benchmark)
 rosparam load $GSEG_BENCHMARK_PATH/config/params.yaml
 bash $GSEG_BENCHMARK_PATH/shellscripts/common.sh
