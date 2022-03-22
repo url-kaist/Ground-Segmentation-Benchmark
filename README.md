@@ -10,6 +10,40 @@ This repository contains various Ground Segmentation baseline methods. Currently
 * [Patchwork](https://github.com/LimHyungTae/patchwork) (ver.1)
 * [Gaussian Floor Segmentation](https://github.com/SmallMunich/FloorSegmentation/tree/master/Gaussian_process_based_Real-time_Ground_Segmentation_for_Autonomous_Land_Vehicles)
 
+## Citation
+
+If our open sources have been helpful, please cite the below papers:
+```
+@inproceedings{oh2022travel,
+    title={{TRAVEL: Traversable ground and above-ground object segmentation using graph representation of 3D LiDAR scans}},
+    author={Oh, Minho and Euigon, Jung and Lim, Hyungtae and Song, Wonho and Hu, Sumin and Lee, Eungchang Mason and Park, Junghee and Kim, Jaekyung and Lee, Jangwoo and Myung, Hyun},
+    booktitle={IEEE Robotics and Automation Letters},
+    year={2022},
+    note={{Submitted}}
+}
+```
+
+```
+@inproceedings{lee2022patchworkpp,
+    title={{Patchwork++: Fast and robust ground segmentation solving partial under-segmentation using 3D point cloud}},
+    author={Lee, Seungjae and Lim, Hyungtae and Myung, Hyun},
+    booktitle={Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst.},
+    year={2022},
+    note={{Submitted}} 
+}
+```
+
+```
+@article{lim2021patchwork,
+    title={Patchwork: Concentric Zone-based Region-wise Ground Segmentation with Ground Likelihood Estimation Using a 3D LiDAR Sensor},
+    author={Lim, Hyungtae and Minho, Oh and Myung, Hyun},
+    journal={IEEE Robot. Autom. Lett.},
+    volume={6},
+    number={4},
+    pages={6458--6465},
+    year={2021},
+    }
+```
 
 ## Contents
 
@@ -138,3 +172,12 @@ then open header file
 sudo gedit /usr/include/flann/util/serialization.h
 ```
 and change all terms of "map" into "unordered_map".
+
+
+
+## License
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+
+
+### Copyright
+- All codes on this page are copyrighted by KAIST and published under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 License. You must attribute the work in the manner specified by the author. You may not use the work for commercial purposes, and you may only distribute the resulting work under the same license if you alter, transform, or create the work.
