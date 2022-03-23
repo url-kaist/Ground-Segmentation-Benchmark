@@ -509,9 +509,8 @@ namespace pcl
         ground_points.reserve(200000);
 
         // Create the filtering object
-        pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&node_handle_);
-
         auto start = chrono::high_resolution_clock::now();
+        pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&node_handle_);
         auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
 
         //search ground

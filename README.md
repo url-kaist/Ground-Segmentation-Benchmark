@@ -97,7 +97,7 @@ sudo apt-get install libpcl-dev
 * Clone our package with [catkin tools](https://catkin-tools.readthedocs.io/en/latest/)
 ```asm
 $ cd catkin_ws/src
-$ git clone https://github.com/LimHyungTae/gseg.git (can be changed)
+$ git clone git@github.com:url-kaist/Ground-Segmentation-Benchmark.git
 $ catkin build gseg_benchmark
 ```
 
@@ -109,11 +109,11 @@ $ catkin build gseg_benchmark
 
 The `data_path` consists of `velodyne` folder and `labels` folder as follows:
 ```
-data_path
+${data_path}
     |___00
         |___labels
-        |    |___000000
-        |    |___000001
+        |    |___000000.label
+        |    |___000001.label
         |    |___ ...
         |___velodyne
             |___000000.bin
@@ -133,14 +133,14 @@ data_path
 * Make directories to load [SemanticKITTI](#Offline-KITTI-dataset) dataset and save output files and apply them in rosparam setting.
 
 ```
-rosparam set /data_path "/data/SemanticKITTI/"      # path of downloaded KITTI dataset
+rosparam set /data_path "/data/SemanticKITTI/"      # path of downloaded KITTI dataset. It must include '/' at the end part
 rosparam set /stop_for_each_frame false             # set as true to make it stop every frame 
 rosparam set /init_idx 0                            # index of first frame to run
 rosparam set /save_csv_file true                    # set as false if csv output files are not needed
-rosparam set /output_csvpath "/data/gpf/"           # path of output files to be generated
+rosparam set /output_csvpath "/data/patchwork/"     # path of output files to be generated
 ```
 
-###Play Sample Data
+### Run Ground Segmentation Algorithms
 
 * Start roscore:
 ```asm
@@ -148,9 +148,13 @@ $ roscore
 ``` 
 * Open a new terminal and launch node with specification of algorithm and data sequence:
 ```asm
-$ cd ${path of Ground-Segmentation-Benchmark}/launch
-$ roslaunch gseg_benchmark.launch alg:=${name of algorithm} seq:=${sequence}
+$ roslaunch gseg_benchmark gseg_benchmark.launch alg:=${name of algorithm} seq:=${sequence}
 ```
+For example,
+```asm
+$ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
+```
+
 * There are 7 algorithms provided: `gpf`, `cascaded_gseg`, `r_gpf`, `linefit`, `ransac`, `patchwork`, `gaussian`
 * The examples of `seq` are 00, 01, ..., 10
   * If you do not set `seq` or set as `seq:=all`, then the csv output files of all datasets from "00" to "10" will be saved automatically.   

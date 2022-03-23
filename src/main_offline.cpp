@@ -40,6 +40,7 @@ std::string acc_filename, pcd_savepath;
 string      algorithm;
 string      mode;
 string      seq;
+string      output_csvdir;
 string      output_csvpath;
 string      data_path;
 bool        save_flag;
@@ -240,8 +241,15 @@ int main(int argc, char **argv) {
 
     string HOME = std::getenv("HOME");
 
+    output_csvdir  = HOME + output_csvpath;
     output_csvpath = HOME + output_csvpath + algorithm + "_";
     data_path      = HOME + data_path + "/" + seq;
+
+    if (save_csv_file) {
+        int unused = system((std::string("exec rm -r ") + output_csvdir).c_str());
+        unused = system((std::string("mkdir -p ") + output_csvdir).c_str());
+        cout << "\033[1;32mSAVE PATH: " << output_csvdir << "\033[0m" << endl;
+    }
 
     KittiLoader loader(data_path);
 
@@ -289,10 +297,9 @@ int main(int argc, char **argv) {
             xyzilid2xyz(pc_curr, pc_curr_tmp);
             pc_ground.clear();
             pc_non_ground.clear();
-
+            auto               start = chrono::high_resolution_clock::now();
             GroundSegmentation linefit(linefit_params);
             std::vector<int>   labels;
-            auto               start = chrono::high_resolution_clock::now();
             linefit.segment(pc_curr_tmp, &labels);
             for (size_t i = 0; i < pc_curr_tmp.size(); ++i) {
                 const auto &pt = pc_curr.points[i];
