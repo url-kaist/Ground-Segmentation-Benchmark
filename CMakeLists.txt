@@ -66,7 +66,7 @@ set(alg_source
     include/r_gpf/r_gpf.hpp
     include/ransac/ransac_gpf.hpp
     include/patchwork/patchwork.hpp
-    include/gaussian/GaussianFloorSegmentation.h
+    include/gpregression/GaussianFloorSegmentation.h
     include/cascadedseg/cascaded_groundseg.hpp
     include/linefit/bin.cc
     include/linefit/ground_segmentation.cc

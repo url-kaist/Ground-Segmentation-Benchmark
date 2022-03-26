@@ -71,24 +71,24 @@ namespace pcl
         GaussianFloorSegmentation(){ };
         GaussianFloorSegmentation(ros::NodeHandle *nh) : node_handle_(*nh) {
             node_handle_.param("/sensor_height", sensor_height_, 1.723);
-            node_handle_.param("/gaussian/rmax", rmax_, 100.0);
+            node_handle_.param("/gpregression/rmax", rmax_, 100.0);
 
-            node_handle_.param("/gaussian/max_bin_points",max_bin_points_, 200);
-            node_handle_.param("/gaussian/num_seed_points", num_seed_points_, 10);
+            node_handle_.param("/gpregression/max_bin_points",max_bin_points_, 200);
+            node_handle_.param("/gpregression/num_seed_points", num_seed_points_, 10);
 
-            node_handle_.param("/gaussian/num_bins_a", num_bins_a_, 72);
-            node_handle_.param("/gaussian/num_bins_l", num_bins_l_, 200);
+            node_handle_.param("/gpregression/num_bins_a", num_bins_a_, 72);
+            node_handle_.param("/gpregression/num_bins_l", num_bins_l_, 200);
 
-            node_handle_.param("/gaussian/p_l", p_l_, (float)30.0);
-            node_handle_.param("/gaussian/p_sf", p_sf_, (float)1.0);
-            node_handle_.param("/gaussian/p_sn", p_sn_, (float)0.3);
-            node_handle_.param("/gaussian/p_tmodel", p_tmodel_, (float)5.0);
-            node_handle_.param("/gaussian/p_tdata", p_tdata_, (float)5.0);
-            node_handle_.param("/gaussian/p_tg", p_tg_, (float)0.3);
+            node_handle_.param("/gpregression/p_l", p_l_, (float)30.0);
+            node_handle_.param("/gpregression/p_sf", p_sf_, (float)1.0);
+            node_handle_.param("/gpregression/p_sn", p_sn_, (float)0.3);
+            node_handle_.param("/gpregression/p_tmodel", p_tmodel_, (float)5.0);
+            node_handle_.param("/gpregression/p_tdata", p_tdata_, (float)5.0);
+            node_handle_.param("/gpregression/p_tg", p_tg_, (float)0.3);
 
-            node_handle_.param("/gaussian/robot_height", robot_height_, 1.723);
-            node_handle_.param("/gaussian/max_seed_range", max_seed_range_, 50.0);
-            node_handle_.param("/gaussian/max_seed_height", max_seed_height_, 3.0);
+            node_handle_.param("/gpregression/robot_height", robot_height_, 1.723);
+            node_handle_.param("/gpregression/max_seed_range", max_seed_range_, 50.0);
+            node_handle_.param("/gpregression/max_seed_height", max_seed_height_, 3.0);
 
             this->initializePolarBinGrid();
             keep_ground_ = true;

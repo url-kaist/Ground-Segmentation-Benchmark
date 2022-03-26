@@ -15,7 +15,7 @@
 #include "patchwork/patchwork.hpp"
 #include "cascadedseg/cascaded_groundseg.hpp"
 #include "linefit/ground_segmentation.h"
-#include "gaussian/GaussianFloorSegmentation.h"
+#include "gpregression/GaussianFloorSegmentation.h"
 
 #include <csignal>
 
@@ -34,18 +34,25 @@ boost::shared_ptr<RegionwiseGPF>     r_gpf;
 boost::shared_ptr<RansacGPF>         ransac_gpf;
 boost::shared_ptr<PatchWork>         patchwork;
 boost::shared_ptr<CascadedGroundSeg> cascaded_gseg;
-boost::shared_ptr<pcl::GaussianFloorSegmentation<PointXYZILID>> gaussian;
+boost::shared_ptr<pcl::GaussianFloorSegmentation<PointXYZILID>> gpregression;
 
-std::string acc_filename, pcd_savepath;
+std::string acc_filename;
+//string    pcd_savepath;
+string      output_pcddir;
 string      algorithm;
 string      mode;
 string      seq;
 string      output_csvdir;
-string      output_csvpath;
 string      data_path;
+string      output_path;
+
+string      output_csvpath;
+string    pcd_savepath;
+
 bool        save_flag;
 bool        use_z_thr;
 bool        save_csv_file;
+bool        save_pcd_flag;
 bool        stop_for_each_frame;
 int         init_idx;
 
@@ -204,10 +211,13 @@ int main(int argc, char **argv) {
     nh.param<string>("/sequence", seq, "00");
     nh.param<bool>("/patchwork/use_z_thr", use_z_thr, false);
     nh.param<bool>("/save_csv_file", save_csv_file, false);
+    nh.param<bool>("/save_pcd_flag", save_pcd_flag, false);
     nh.param<bool>("/stop_for_each_frame", stop_for_each_frame, false);
     nh.param<int>("/init_idx", init_idx, 0);
-    nh.param<string>("/output_csvpath", output_csvpath, "/data/");
+//    nh.param<string>("/output_csvpath", output_csvpath, "/data/");
+//    nh.param<string>("/pcd_savepath", pcd_savepath, "/data/");
     nh.param<string>("/data_path", data_path, "/");
+    nh.param<string>("/output_path", output_path, "/data/");
 
     CloudPublisher = nh.advertise<sensor_msgs::PointCloud2>("/benchmark/cloud", 100, true);
     TPPublisher    = nh.advertise<sensor_msgs::PointCloud2>("/benchmark/TP", 100, true);
@@ -233,22 +243,29 @@ int main(int argc, char **argv) {
     } else if (algorithm == "cascaded_gseg") {
         cascaded_gseg.reset(new CascadedGroundSeg(&nh));
         cout << "CascadedSeg init. complete" << endl;
-    } else if (algorithm == "gaussian") {
-        gaussian.reset(new pcl::GaussianFloorSegmentation<PointType>(&nh));
-        gaussian->print_rosparam(&nh);
+    } else if (algorithm == "gpregression") {
+        gpregression.reset(new pcl::GaussianFloorSegmentation<PointType>(&nh));
+        gpregression->print_rosparam(&nh);
         cout << "Guassian Floor Segmentation init. complete" << endl;
     }
 
     string HOME = std::getenv("HOME");
 
-    output_csvdir  = HOME + output_csvpath;
-    output_csvpath = HOME + output_csvpath + algorithm + "_";
-    data_path      = HOME + data_path + "/" + seq;
+    output_csvdir  = HOME + output_path + algorithm + "/csv/";
+    output_csvpath = output_csvdir + algorithm + "_";
+    output_pcddir  = HOME + output_path + algorithm + "/pcd/";
+    pcd_savepath   = output_pcddir + algorithm + "_";
+    data_path      = data_path + seq; //HOME +
 
     if (save_csv_file) {
         int unused = system((std::string("exec rm -r ") + output_csvdir).c_str());
         unused = system((std::string("mkdir -p ") + output_csvdir).c_str());
         cout << "\033[1;32mSAVE PATH: " << output_csvdir << "\033[0m" << endl;
+    }
+    if (save_pcd_flag) {
+        int unused = system((std::string("exec rm -r ") + output_pcddir).c_str());
+        unused = system((std::string("mkdir -p ") + output_pcddir).c_str());
+        cout << "\033[1;32mSAVE PATH: " << output_pcddir << "\033[0m" << endl;
     }
 
     KittiLoader loader(data_path);
@@ -264,6 +281,8 @@ int main(int argc, char **argv) {
         pcl::PointCloud<PointType> pc_non_ground;
         pc_ground.reserve(150000);
         pc_non_ground.reserve(150000);
+        vector<int> labels;
+        labels.reserve(pc_curr.size());
 
 //        std::cout << "cloud before filtering: "<<pc_curr.size()<<endl;
 
@@ -279,10 +298,15 @@ int main(int argc, char **argv) {
             ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "patchwork") {
             cout << "Operating patchwork..." << endl;
+//            patchwork->estimate_ground(pc_curr,labels);
+//            cout<<"input size: "<<pc_curr.size()<<" | label size: "<<labels.size()<<endl;
+//            for (int i = 0; i < labels.size(); i++) {
+//                cout << labels[i] << " ";
+//            }
             patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-        } else if (algorithm == "gaussian") {
-            cout << "Operating gaussian..." << endl;
-            gaussian->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
+        } else if (algorithm == "gpregression") {
+            cout << "Operating gpregression..." << endl;
+            gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
@@ -324,11 +348,11 @@ int main(int argc, char **argv) {
         //calculate_precision_recall(pc_curr, pc_ground, precision_naive, recall_naive, false);
         //calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_naive, recall_naive, false);
 
-        //Print
-        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
+        //Print-reload
+//        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
         cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
         cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
-
+//        cout << "frame" << n << ":" << pc_curr.size() << " | w veg: "<< (TPFNs[0]+TPFNs[1]+TPFNs[2]+TPFNs[3])<<" | wo_veg: "<< (TPFNs_wo_veg[0]+TPFNs_wo_veg[1]+TPFNs_wo_veg[2]+TPFNs_wo_veg[3]) <<endl;
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 //        If you want to save precision/recall in a text file, revise this part
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -361,23 +385,25 @@ int main(int argc, char **argv) {
         // discern_ground(pc_non_ground, FN, TN);
         discern_ground_without_vegetation(pc_non_ground, FN, TN);
 
-        //Print
-        cout << "TP: " << TP.points.size();
-        cout << " | FP: " << FP.points.size();
-        cout << " | TN: " << TN.points.size() << endl;
+        //Print-reload
+//        cout << "TP: " << TP.points.size();
+//        cout << " | FP: " << FP.points.size();
+//        cout << " | TN: " << TN.points.size() << endl;
+
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 //        If you want to save the output of pcd, revise this part
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-//        if (save_flag) {
+        if (save_pcd_flag) {
 //            std::map<int, int> pc_curr_gt_counts, g_est_gt_counts;
 //            double             accuracy;
 //            save_all_accuracy(pc_curr, pc_ground, acc_filename, accuracy, pc_curr_gt_counts, g_est_gt_counts);
-//
-//            std::string count_str        = std::to_string(n);
-//            std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
-//            std::string pcd_filename     = pcd_savepath + "/" + count_str_padded + ".pcd";
-//            pc2pcdfile(TP, FP, FN, TN, pcd_filename);
-//        }
+
+            std::string count_str        = std::to_string(n);
+            std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
+            std::string pcd_filename     = pcd_savepath + count_str_padded + ".pcd";
+
+            pc2pcdfile(TP, FP, FN, TN, pcd_filename);
+        }
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
         CloudPublisher.publish(cvt::cloud2msg(pc_curr));

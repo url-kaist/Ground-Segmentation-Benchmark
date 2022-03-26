@@ -1,7 +1,7 @@
 <launch>
 
 <node name="$(anon benchmark)" pkg="nonplanar_gpf" type="benchmark" output="screen">
-<rosparam param="/algorithm">"gaussian"</rosparam>
+<rosparam param="/algorithm">"gpregression"</rosparam>
 <rosparam param="/seq">"00"</rosparam>
 <rosparam param="/save_csv_file">true</rosparam>
 <rosparam param="/data_path">true</rosparam>

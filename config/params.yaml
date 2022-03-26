@@ -79,7 +79,7 @@ linefit:
     latch: false            # latch output topics or not
     visualize: false        # visualize segmentation result - USE ONLY FOR DEBUGGING
 
-gaussian:
+gpregression:
     rmax: 100
     max_bin_points: 200
     num_seed_points: 10
