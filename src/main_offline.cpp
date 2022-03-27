@@ -47,7 +47,10 @@ string      data_path;
 string      output_path;
 
 string      output_csvpath;
-string    pcd_savepath;
+string      pcd_savepath;
+
+string      estimate_output_dir;
+string      estimate_output_path;
 
 bool        save_flag;
 bool        use_z_thr;
@@ -191,7 +194,7 @@ public:
                 pt.z         = buffer[i * 4 + 2];
                 pt.intensity = buffer[i * 4 + 3];
                 pt.label     = labels[i] & 0xFFFF;
-                pt.id        = labels[i] >> 16;
+                pt.id        = i;//labels[i] >> 16;
             }
 
         }
@@ -201,6 +204,7 @@ private:
     int         num_frames_;
     std::string label_path_;
     std::string pc_path_;
+
 };
 
 int main(int argc, char **argv) {
@@ -251,11 +255,21 @@ int main(int argc, char **argv) {
 
     string HOME = std::getenv("HOME");
 
-    output_csvdir  = HOME + output_path + algorithm + "/csv/";
+    output_csvdir  = HOME + output_path + algorithm + "_csv/";
     output_csvpath = output_csvdir + algorithm + "_";
-    output_pcddir  = HOME + output_path + algorithm + "/pcd/";
-    pcd_savepath   = output_pcddir + algorithm + "_";
+    output_pcddir  = HOME + output_path + algorithm + "_pcds/" + seq + "/";
+    pcd_savepath   = output_pcddir;
     data_path      = data_path + seq; //HOME +
+
+//------------- Save ground / non-ground estimation result in csv format -----------//
+    estimate_output_dir = HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
+    bool save_ground_labels = true ;
+    if (save_ground_labels) {
+        int unused = system((std::string("exec rm -r ") + estimate_output_dir).c_str());
+        unused = system((std::string("mkdir -p ") + estimate_output_dir).c_str());
+        cout << "\033[1;32mSAVE PATH: " << estimate_output_dir << "\033[0m" << endl;
+    }
+//-----------------------------------------------------------------------------------//
 
     if (save_csv_file) {
         int unused = system((std::string("exec rm -r ") + output_csvdir).c_str());
@@ -298,12 +312,10 @@ int main(int argc, char **argv) {
             ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "patchwork") {
             cout << "Operating patchwork..." << endl;
-//            patchwork->estimate_ground(pc_curr,labels);
-//            cout<<"input size: "<<pc_curr.size()<<" | label size: "<<labels.size()<<endl;
-//            for (int i = 0; i < labels.size(); i++) {
-//                cout << labels[i] << " ";
-//            }
             patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            cout<<"estimate end"<<endl;
+            patchwork->estimate_ground(pc_curr,labels);
+            cout<<"label end"<<endl;
         } else if (algorithm == "gpregression") {
             cout << "Operating gpregression..." << endl;
             gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
@@ -352,7 +364,6 @@ int main(int argc, char **argv) {
 //        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
         cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
         cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
-//        cout << "frame" << n << ":" << pc_curr.size() << " | w veg: "<< (TPFNs[0]+TPFNs[1]+TPFNs[2]+TPFNs[3])<<" | wo_veg: "<< (TPFNs_wo_veg[0]+TPFNs_wo_veg[1]+TPFNs_wo_veg[2]+TPFNs_wo_veg[3]) <<endl;
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 //        If you want to save precision/recall in a text file, revise this part
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -374,7 +385,6 @@ int main(int argc, char **argv) {
         }
 
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-
         // Publish msg
         pcl::PointCloud<PointType> TP;
         pcl::PointCloud<PointType> FP;
@@ -405,7 +415,19 @@ int main(int argc, char **argv) {
             pc2pcdfile(TP, FP, FN, TN, pcd_filename);
         }
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+//      If you want to save ground(1) / nonground(0) result as Nx1 csv file
+        if (save_ground_labels){
+            std::string count_str        = std::to_string(n);
+            std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
+            std::string binary_csv_path = estimate_output_dir + count_str_padded + ".csv";
 
+            ofstream label_output(binary_csv_path, ios::app);
+            for (int label ; label<labels.size() ; label++){
+                label_output << label << std::endl;
+            }
+            label_output.close();
+        }
+// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         CloudPublisher.publish(cvt::cloud2msg(pc_curr));
         TPPublisher.publish(cvt::cloud2msg(TP));
         FPPublisher.publish(cvt::cloud2msg(FP));

@@ -9,7 +9,7 @@ rosparam set /stop_for_each_frame true                   # set as 'true' to make
 
 rosparam set /init_idx 0                                 # index of the first frame to run
 
-rosparam set /save_csv_file true                        # set as 'false' if csv output files are not needed
+rosparam set /save_csv_file false                        # set as 'false' if csv output files are not needed
 
 #rosparam set /output_csvpath "/data/patchwork/csv/"      # path of output files to be generated
 
