@@ -108,6 +108,10 @@ public:
             pcl::PointCloud<PointXYZILID> &cloudNonground,
             double &time_taken);
 
+    void estimate_ground(
+            pcl::PointCloud<PointXYZILID> &cloudIn,
+            vector<int> &labels);
+
 private:
     ros::NodeHandle node_handle_;
     ros::Publisher  PlaneViz;
@@ -194,7 +198,6 @@ void CascadedGroundSeg::estimate_ground(
         pcl::PointCloud<PointXYZILID> &cloudNonground,
         double &time_taken) {
 
-
     pcl::PointCloud<PointXYZILIDR>::Ptr laserCloudIn(new pcl::PointCloud<PointXYZILIDR>);
     PointXYZILID2XYZILIDR(cloudIn, *laserCloudIn);
 
@@ -219,7 +222,50 @@ void CascadedGroundSeg::estimate_ground(
     time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
 }
 
+void CascadedGroundSeg::estimate_ground(
+        pcl::PointCloud<PointXYZILID> &cloudIn,
+        vector<int> &labels) {
 
+    pcl::PointCloud<PointXYZILIDR>::Ptr laserCloudIn(new pcl::PointCloud<PointXYZILIDR>);
+    PointXYZILID2XYZILIDR(cloudIn, *laserCloudIn);
+
+    pcl::PointCloud<PointXYZILID> cloudOut;
+    pcl::PointCloud<PointXYZILID> ground_points;
+    ground_points.header    = cloudIn.header;
+    ground_points.reserve(200000);
+
+    pcl::PointCloud<PointXYZILID> cloudNonground;
+    pcl::PointCloud<PointXYZILID> nonground_points;
+//    nonground_points.header = cloudIn.header;
+//    nonground_points.reserve(200000);
+
+    int ground = 0;
+
+    auto start = chrono::high_resolution_clock::now();
+    SegmentGround(laserCloudIn, nonground_points, ground_points);
+//    if (!floor_removal_) {
+//        PointXYZILIDR2XYZILID(*laserCloudIn, nonground_points);
+//    }
+    cloudOut       = ground_points;
+//    cloudNonground = nonground_points;
+
+    pcl::KdTreeFLANN<PointXYZILID> kdtree;
+    std::vector<int> idxes;
+    std::vector<float> sqr_dists;
+
+    auto cloudGround = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudOut);
+    kdtree.setInputCloud(cloudGround);
+
+    for (int i = 0; i<cloudIn.points.size(); i++) {
+        PointXYZILID query = cloudIn.points[i];
+        kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
+        if (sqr_dists[0]==0) labels.push_back(1);
+        else labels.push_back(0);
+    }
+
+    auto end = chrono::high_resolution_clock::now();
+//    time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
+}
 void CascadedGroundSeg::SegmentGround(
         const pcl::PointCloud<PointXYZILIDR>::ConstPtr &pc_in,
         pcl::PointCloud<PointXYZILID> &nonground_out,

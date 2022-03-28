@@ -120,6 +120,9 @@ namespace pcl
                              pcl::PointCloud<PointXYZILID> &cloudNonground,
                              double &time_taken);
 
+        void estimate_ground(pcl::PointCloud<PointXYZILID> &cloudIn,
+                             vector<int> &labels);
+
         using PointCloud = typename pcl::Filter<PointT>::PointCloud;
 
         void setKeepGround(bool v)
@@ -524,6 +527,55 @@ namespace pcl
 
         //search non ground with kdtree flann
         ground_segmentation.searchNonground(cloudIn, cloudOut, cloudNonground);
+    }
+    template <typename PointT>
+    void GaussianFloorSegmentation<PointT>::estimate_ground(pcl::PointCloud<PointXYZILID> &cloudIn,
+                                                            vector<int> &labels)
+    {
+        pcl::PointCloud<PointType> cloudOut;
+        pcl::PointCloud<PointType> cloudNonground;
+        int isground = 0;
+
+        if (!labels.empty()) labels.clear();
+
+        pcl::PointIndicesPtr ground(new pcl::PointIndices);
+
+        pcl::PointCloud<PointXYZILID>::Ptr cloud_filtered(new pcl::PointCloud<PointXYZILID>);
+        pcl::PointCloud<PointXYZILID>::Ptr cloud_nonground(new pcl::PointCloud<PointXYZILID>);
+
+        pcl::PointCloud<PointXYZILID> nonground_points;
+        pcl::PointCloud<PointXYZILID> ground_points;
+        nonground_points.header = cloudIn.header;
+        ground_points.header    = cloudIn.header;
+        nonground_points.reserve(200000);
+        ground_points.reserve(200000);
+
+        // Create the filtering object
+        auto start = chrono::high_resolution_clock::now();
+        pcl::GaussianFloorSegmentation<PointXYZILID> ground_segmentation(&node_handle_);
+        auto cloudInput = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudIn);
+
+        //search ground
+        ground_segmentation.setInputCloud(cloudInput);
+        ground_segmentation.setKeepGround(true);
+        ground_segmentation.filter(*cloud_filtered);
+        cloudOut = *cloud_filtered;
+
+        pcl::KdTreeFLANN<PointXYZILID> kdtree;
+        std::vector<int> idxes;
+        std::vector<float> sqr_dists;
+
+        auto cloudGround = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudOut);
+        kdtree.setInputCloud(cloudGround);
+
+        for (int i = 0; i<cloudIn.points.size(); i++) {
+            PointXYZILID query = cloudIn.points[i];
+            kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
+            if (sqr_dists[0]==0) labels.push_back(1);
+            else labels.push_back(0);
+        }
+
+        auto end = chrono::high_resolution_clock::now();
     }
 
     template <typename PointT>

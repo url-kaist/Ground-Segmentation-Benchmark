@@ -5,7 +5,7 @@ echo "Loading common parameters for ground segmentation benchmark..."
 rosparam set /data_path "/media/jeewon/Elements/semantic_kitti_raw/"
 #"/data/SemanticKITTI/sequences/" # path of downloaded KITTI dataset. It must include '/' at the end part
 
-rosparam set /stop_for_each_frame true                   # set as 'true' to make it stop every frame
+rosparam set /stop_for_each_frame false                   # set as 'true' to make it stop every frame
 
 rosparam set /init_idx 0                                 # index of the first frame to run
 

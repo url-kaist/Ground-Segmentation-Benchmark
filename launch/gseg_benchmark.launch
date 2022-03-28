@@ -2,7 +2,7 @@
 <rosparam command="load" file="$(find gseg_benchmark)/config/params.yaml" />
 
 <arg name="alg" default="patchwork" />
-<arg name="seq" default="04" />
+<arg name="seq" default="all" />
 <!-- <arg name="seq" default="all" /> -->
 <param name="/algorithm" value="$(arg alg)" />
 <param name="/sequence" type="str" value="$(arg seq)" />

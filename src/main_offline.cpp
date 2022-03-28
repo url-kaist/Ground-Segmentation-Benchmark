@@ -311,11 +311,9 @@ int main(int argc, char **argv) {
             cout << "Operating ransac..." << endl;
             ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "patchwork") {
-            cout << "Operating patchwork..." << endl;
-            patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-            cout<<"estimate end"<<endl;
+//            cout << "Operating patchwork..." << endl;
+//            patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
             patchwork->estimate_ground(pc_curr,labels);
-            cout<<"label end"<<endl;
         } else if (algorithm == "gpregression") {
             cout << "Operating gpregression..." << endl;
             gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
@@ -337,10 +335,16 @@ int main(int argc, char **argv) {
             GroundSegmentation linefit(linefit_params);
             std::vector<int>   labels;
             linefit.segment(pc_curr_tmp, &labels);
+
+            int ground = 0;
             for (size_t i = 0; i < pc_curr_tmp.size(); ++i) {
                 const auto &pt = pc_curr.points[i];
-                if (labels[i] == 1) pc_ground.points.emplace_back(pt);
-                else pc_non_ground.points.emplace_back(pt);
+                if (labels[i] == 1) {
+                    pc_ground.points.emplace_back(pt);
+                }
+                else {
+                    pc_non_ground.points.emplace_back(pt);
+                }
             }
             auto end = chrono::high_resolution_clock::now();
             time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
@@ -348,7 +352,8 @@ int main(int argc, char **argv) {
             throw invalid_argument("The type of algorithm is invalid");
         }
 
-        //cout<<"ground: "<< pc_ground.size()<<" | nonground: "<<pc_non_ground.size()<<endl;
+//        cout<<"ground size: "<< pc_ground.size()<<endl;
+//        cout<<"label size "<<labels.size()<<", cur size: "<<pc_curr.size()<<endl;
 
         // Estimation
         static double      precision, recall, precision_wo_veg, recall_wo_veg;
@@ -362,8 +367,8 @@ int main(int argc, char **argv) {
 
         //Print-reload
 //        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
-        cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
-        cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
+//        cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
+//        cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 //        If you want to save precision/recall in a text file, revise this part
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -422,7 +427,7 @@ int main(int argc, char **argv) {
             std::string binary_csv_path = estimate_output_dir + count_str_padded + ".csv";
 
             ofstream label_output(binary_csv_path, ios::app);
-            for (int label ; label<labels.size() ; label++){
+            for (auto label : labels){
                 label_output << label << std::endl;
             }
             label_output.close();
