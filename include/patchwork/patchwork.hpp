@@ -457,12 +457,13 @@ void PatchWork::estimate_ground(
         vector<int> &labels) {
     pcl::PointCloud<PointType> cloudOut;
     pcl::PointCloud<PointType> cloudNonground;
-    int ground;
-
     if (!labels.empty()) labels.clear();
 
     pcl::PointCloud<PointType> laserCloudIn;
     laserCloudIn = cloudIn;
+
+    static double start = ros::Time::now().toSec();
+
     sort(laserCloudIn.points.begin(), laserCloudIn.end(), point_z_cmp);
 
     pcl::PointCloud<PointType>::iterator it = laserCloudIn.points.begin();
@@ -568,6 +569,7 @@ void PatchWork::estimate_ground(
     }
 //    cout<<"number of 1: "<<cnt<<endl;
 ///////
+    static double end        = ros::Time::now().toSec();
 
     if (verbose_) {
         sensor_msgs::PointCloud2 cloud_ROS;

@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
             cout << "Operating ransac..." << endl;
             ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "patchwork") {
-//            cout << "Operating patchwork..." << endl;
+            cout << "Operating patchwork..." << endl;
 //            patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
             patchwork->estimate_ground(pc_curr,labels);
         } else if (algorithm == "gpregression") {
@@ -361,9 +361,9 @@ int main(int argc, char **argv) {
         static vector<int> TPFNs_wo_veg; // TP, FP, FN, TF order
 
         calculate_precision_recall(pc_curr, pc_ground, precision, recall, TPFNs);
+//        cout<<"w vegi: " <<pc_curr.size()-(TPFNs[0] +TPFNs[1]+TPFNs[2]+TPFNs[3])<<endl;
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
-        //calculate_precision_recall(pc_curr, pc_ground, precision_naive, recall_naive, false);
-        //calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_naive, recall_naive, false);
+//        cout<<"wo vegi: " <<pc_curr.size()-(TPFNs_wo_veg[0] +TPFNs_wo_veg[1]+TPFNs_wo_veg[2]+TPFNs_wo_veg[3])<<endl;
 
         //Print-reload
 //        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
