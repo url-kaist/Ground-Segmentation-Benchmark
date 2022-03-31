@@ -268,7 +268,7 @@ void RegionwiseGPF::estimate_ground(const pcl::PointCloud<PointXYZILID>& cloudIn
         }
       }
     }
-    std::cout<<num_max_p<< " | " << num_max_rg<<" | "<<num_max_rng<<std::endl;
+//    std::cout<<num_max_p<< " | " << num_max_rg<<" | "<<num_max_rng<<std::endl;
 
     auto end = chrono::high_resolution_clock::now();
     time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;

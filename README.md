@@ -51,6 +51,7 @@ If our open sources have been helpful, please cite the below papers published by
 1. [Requirements](#Requirements)
 2. [Preparing DataSet](#Preparing-DataSet)
 3. [Getting Started](#Getting-Started)
+4. [Python visualization / Provided result files](#If-you-are-not-familiar-with-ROS/C++...)
 
 
 ## Description
@@ -134,10 +135,11 @@ ${data_path}
 
 ```
 rosparam set /data_path "/data/SemanticKITTI/"      # path of downloaded KITTI dataset. It must include '/' at the end part
-rosparam set /stop_for_each_frame false             # set as true to make it stop every frame 
+rosparam set /stop_for_each_frame false             # set as 'true' to make it stop every frame 
 rosparam set /init_idx 0                            # index of first frame to run
-rosparam set /save_csv_file true                    # set as false if csv output files are not needed
-rosparam set /output_csvpath "/data/patchwork/"     # path of output files to be generated
+rosparam set /save_csv_file true                    # set as 'false' if csv output files are not needed
+rosparam set /save_pcd_flag false                   # set as 'false' if csv output files are not needed
+rosparam set /output_path "/data/"                  # path of output files to be generated
 ```
 
 ### Run Ground Segmentation Algorithms
@@ -159,6 +161,38 @@ $ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
 * The examples of `seq` are 00, 01, ..., 10
   * If you do not set `seq` or set as `seq:=all`, then the csv output files of all datasets from "00" to "10" will be saved automatically.   
 * Rviz result will be shown automatically.
+
+## If you are not familiar with ROS/C++...
+
+### Provided Result Files
+We provide csv files of binary estimated results of sequences from "00" to "10".\
+1 for ground points, 2 for non-ground points.\
+Unzip `ground_labels.tar.gz` folder.
+
+### Visualization with Python
+We provide Python code to visualize estimated results in binary form.
+
+* Install [python3](https://www.python.org/downloads/)
+* Install [open3d](http://www.open3d.org/docs/release/getting_started.html)
+```
+pip install open3d
+```
+* Set parameters in `src/utils/viz_one_frame.py` or `src/utils/viz_all_frames.py`
+```
+alg = "patchwork"
+seq = "04"
+kittiraw_dir = "/data/SemanticKITTI/"
+label_csv_dir = "/data/"
+frame_num ="000010"                                 # needed only in viz_one_frame.py
+```
+* Run python code
+```asm
+$ cd ~/catkin_ws/src/Ground-Segmentation-Benchmark/src/utils
+$ python3 viz_one_frame.py
+$ python3 viz_all_frames.py
+```
+![Image text](config/materials/open3d.png)
+* green: *ground*, black: *nonground*
 
 ---
 ## Contributors

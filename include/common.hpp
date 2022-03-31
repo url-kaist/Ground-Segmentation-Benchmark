@@ -69,7 +69,7 @@
 
 #define BLUE_COLOR 0.0
 
-int NUM_ZEROS = 5;
+int NUM_ZEROS = 6;
 
 using namespace std;
 

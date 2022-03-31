@@ -235,6 +235,7 @@ int main(int argc, char **argv) {
     // Should declare linefit inside ground segmentation every time
     GroundSegmentationParams linefit_params;
     set_linefit_params(&nh, linefit_params);
+    std::vector<int>   labels;
 
     if (algorithm == "gpf") {           // "multiple" mode is the original gpf algorithm
         gpf.reset(new GroundPlaneFit(&nh));
@@ -262,12 +263,12 @@ int main(int argc, char **argv) {
     data_path      = data_path + seq; //HOME +
 
 //------------- Save ground / non-ground estimation result in csv format -----------//
-    estimate_output_dir = HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
+    estimate_output_dir = "/media/jeewon/Elements/data/" + algorithm + "_ground_labels/" + seq + "/";//HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
     bool save_ground_labels = true ;
     if (save_ground_labels) {
         int unused = system((std::string("exec rm -r ") + estimate_output_dir).c_str());
         unused = system((std::string("mkdir -p ") + estimate_output_dir).c_str());
-        cout << "\033[1;32mSAVE PATH: " << estimate_output_dir << "\033[0m" << endl;
+        cout << "\033[1;32mSAVE PATH: " << estimate_output_dir << "\033[estimate_out0m" << endl;
     }
 //-----------------------------------------------------------------------------------//
 
@@ -303,28 +304,33 @@ int main(int argc, char **argv) {
         static double time_taken;
         if (algorithm == "gpf") {
             cout << "Operating gpf..." << endl;
-            gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            gpf->estimate_ground(pc_curr,labels);
+//            gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "r_gpf") {
             cout << "Operating r-gpf..." << endl;
-            r_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            r_gpf->estimate_ground(pc_curr,labels);
+//            r_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "ransac") {
             cout << "Operating ransac..." << endl;
-            ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            ransac_gpf->estimate_ground(pc_curr,labels);
+//            ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "patchwork") {
             cout << "Operating patchwork..." << endl;
 //            patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-            patchwork->estimate_ground(pc_curr,labels);
+            patchwork->estimate_ground(pc_curr,labels,time_taken);
         } else if (algorithm == "gpregression") {
             cout << "Operating gpregression..." << endl;
-            gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
+            gpregression->estimate_ground(pc_curr,labels);
+//            gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
-            int num1 = (int) pc_curr.size();
-            cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
-            pc_curr.points.clear();
-            pc_curr = pc_ground + pc_non_ground;
-            int num2 = (int) pc_curr.size();
-            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
+//            int num1 = (int) pc_curr.size();
+            cascaded_gseg->estimate_ground(pc_curr,labels);
+//            cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
+//            pc_curr.points.clear();
+//            pc_curr = pc_ground + pc_non_ground;
+//            int num2 = (int) pc_curr.size();
+//            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
         } else if (algorithm == "linefit") {
             pcl::PointCloud<pcl::PointXYZ> pc_curr_tmp;
             // To run linefit, dummy pcl::PointXYZ is set
@@ -333,10 +339,9 @@ int main(int argc, char **argv) {
             pc_non_ground.clear();
             auto               start = chrono::high_resolution_clock::now();
             GroundSegmentation linefit(linefit_params);
-            std::vector<int>   labels;
+            labels.empty();
             linefit.segment(pc_curr_tmp, &labels);
 
-            int ground = 0;
             for (size_t i = 0; i < pc_curr_tmp.size(); ++i) {
                 const auto &pt = pc_curr.points[i];
                 if (labels[i] == 1) {

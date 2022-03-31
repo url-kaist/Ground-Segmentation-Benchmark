@@ -134,7 +134,8 @@ public:
 
     void estimate_ground(
             pcl::PointCloud<PointType> &cloudIn,
-            vector<int> &labels);
+            vector<int> &labels,
+            double &time_taken);
 
     geometry_msgs::PolygonStamped set_plane_polygon(const MatrixXf &normal_v, const float &d);
 
@@ -454,13 +455,18 @@ void PatchWork::estimate_ground(
 
 void PatchWork::estimate_ground(
         pcl::PointCloud<PointType> &cloudIn,
-        vector<int> &labels) {
+        vector<int> &labels,
+        double &time_taken) {
     pcl::PointCloud<PointType> cloudOut;
     pcl::PointCloud<PointType> cloudNonground;
     if (!labels.empty()) labels.clear();
 
     pcl::PointCloud<PointType> laserCloudIn;
     laserCloudIn = cloudIn;
+
+    poly_list_.header.stamp = ros::Time::now();
+    if (!poly_list_.polygons.empty()) poly_list_.polygons.clear();
+    if (!poly_list_.likelihood.empty()) poly_list_.likelihood.clear();
 
     static double start = ros::Time::now().toSec();
 
@@ -582,6 +588,7 @@ void PatchWork::estimate_ground(
         cloud_ROS.header.frame_id = "/map";
         reject_pc_pub.publish(cloud_ROS);
     }
+    PlaneViz.publish(poly_list_);
 }
 
 double PatchWork::calc_principal_variance(const Eigen::Matrix3f &cov, const Eigen::Vector4f &centroid) {
