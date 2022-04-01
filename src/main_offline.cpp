@@ -260,16 +260,18 @@ int main(int argc, char **argv) {
     output_csvpath = output_csvdir + algorithm + "_";
     output_pcddir  = HOME + output_path + algorithm + "_pcds/" + seq + "/";
     pcd_savepath   = output_pcddir;
-    data_path      = data_path + seq; //HOME +
+    data_path      = HOME + data_path + seq;        //delete 'HOME +' if you use SSD
 
 //------------- Save ground / non-ground estimation result in csv format -----------//
-    estimate_output_dir = "/media/jeewon/Elements/data/" + algorithm + "_ground_labels/" + seq + "/";//HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
+/*
+    estimate_output_dir = HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
     bool save_ground_labels = true ;
     if (save_ground_labels) {
         int unused = system((std::string("exec rm -r ") + estimate_output_dir).c_str());
         unused = system((std::string("mkdir -p ") + estimate_output_dir).c_str());
         cout << "\033[1;32mSAVE PATH: " << estimate_output_dir << "\033[estimate_out0m" << endl;
     }
+    */
 //-----------------------------------------------------------------------------------//
 
     if (save_csv_file) {
@@ -304,33 +306,33 @@ int main(int argc, char **argv) {
         static double time_taken;
         if (algorithm == "gpf") {
             cout << "Operating gpf..." << endl;
-            gpf->estimate_ground(pc_curr,labels);
-//            gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+//            gpf->estimate_ground(pc_curr,labels);
         } else if (algorithm == "r_gpf") {
             cout << "Operating r-gpf..." << endl;
-            r_gpf->estimate_ground(pc_curr,labels);
-//            r_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            r_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+//            r_gpf->estimate_ground(pc_curr,labels);
         } else if (algorithm == "ransac") {
             cout << "Operating ransac..." << endl;
-            ransac_gpf->estimate_ground(pc_curr,labels);
-//            ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            ransac_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+//            ransac_gpf->estimate_ground(pc_curr,labels);
         } else if (algorithm == "patchwork") {
             cout << "Operating patchwork..." << endl;
-//            patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-            patchwork->estimate_ground(pc_curr,labels,time_taken);
+            patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
+            patchwork->estimate_ground(pc_curr,labels);
         } else if (algorithm == "gpregression") {
             cout << "Operating gpregression..." << endl;
-            gpregression->estimate_ground(pc_curr,labels);
-//            gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
+            gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
+//            gpregression->estimate_ground(pc_curr,labels);
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
-//            int num1 = (int) pc_curr.size();
+            int num1 = (int) pc_curr.size();
             cascaded_gseg->estimate_ground(pc_curr,labels);
-//            cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
-//            pc_curr.points.clear();
-//            pc_curr = pc_ground + pc_non_ground;
-//            int num2 = (int) pc_curr.size();
-//            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
+            cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
+            pc_curr.points.clear();
+            pc_curr = pc_ground + pc_non_ground;
+            int num2 = (int) pc_curr.size();
+            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
         } else if (algorithm == "linefit") {
             pcl::PointCloud<pcl::PointXYZ> pc_curr_tmp;
             // To run linefit, dummy pcl::PointXYZ is set
@@ -357,9 +359,6 @@ int main(int argc, char **argv) {
             throw invalid_argument("The type of algorithm is invalid");
         }
 
-//        cout<<"ground size: "<< pc_ground.size()<<endl;
-//        cout<<"label size "<<labels.size()<<", cur size: "<<pc_curr.size()<<endl;
-
         // Estimation
         static double      precision, recall, precision_wo_veg, recall_wo_veg;
         static vector<int> TPFNs; // TP, FP, FN, TF order
@@ -370,10 +369,10 @@ int main(int argc, char **argv) {
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
 //        cout<<"wo vegi: " <<pc_curr.size()-(TPFNs_wo_veg[0] +TPFNs_wo_veg[1]+TPFNs_wo_veg[2]+TPFNs_wo_veg[3])<<endl;
 
-        //Print-reload
-//        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
-//        cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
-//        cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
+        //Print Precision, Recall
+        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
+        cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
+        cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 //        If you want to save precision/recall in a text file, revise this part
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -405,10 +404,10 @@ int main(int argc, char **argv) {
         // discern_ground(pc_non_ground, FN, TN);
         discern_ground_without_vegetation(pc_non_ground, FN, TN);
 
-        //Print-reload
-//        cout << "TP: " << TP.points.size();
-//        cout << " | FP: " << FP.points.size();
-//        cout << " | TN: " << TN.points.size() << endl;
+        //Print TPFN
+        cout << "TP: " << TP.points.size();
+        cout << " | FP: " << FP.points.size();
+        cout << " | TN: " << TN.points.size() << endl;
 
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 //        If you want to save the output of pcd, revise this part
@@ -425,7 +424,7 @@ int main(int argc, char **argv) {
             pc2pcdfile(TP, FP, FN, TN, pcd_filename);
         }
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-//      If you want to save ground(1) / nonground(0) result as Nx1 csv file
+/*      Run this code if you want to save ground(1) / nonground(0) result as Nx1 csv file
         if (save_ground_labels){
             std::string count_str        = std::to_string(n);
             std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
@@ -437,6 +436,7 @@ int main(int argc, char **argv) {
             }
             label_output.close();
         }
+*/
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         CloudPublisher.publish(cvt::cloud2msg(pc_curr));
         TPPublisher.publish(cvt::cloud2msg(TP));

@@ -134,8 +134,7 @@ public:
 
     void estimate_ground(
             pcl::PointCloud<PointType> &cloudIn,
-            vector<int> &labels,
-            double &time_taken);
+            vector<int> &labels);
 
     geometry_msgs::PolygonStamped set_plane_polygon(const MatrixXf &normal_v, const float &d);
 
@@ -455,8 +454,8 @@ void PatchWork::estimate_ground(
 
 void PatchWork::estimate_ground(
         pcl::PointCloud<PointType> &cloudIn,
-        vector<int> &labels,
-        double &time_taken) {
+        vector<int> &labels
+        ) {
     pcl::PointCloud<PointType> cloudOut;
     pcl::PointCloud<PointType> cloudNonground;
     if (!labels.empty()) labels.clear();
@@ -538,28 +537,11 @@ void PatchWork::estimate_ground(
             }
         }
     }
-    /*
-    for (int i = 0; i<cloudIn.points.size(); i++){
-        PointType pt = cloudIn.points[i];
-        ground=0;
-        for (int j=0 ; j<cloudOut.size() ; j++){
-            PointType g_pt = cloudOut.points[j];
-            if (pt.x == g_pt.x &&pt.y == g_pt.y &&pt.z == g_pt.z){
-                labels.push_back(1);
-                ground=1;
-                break;
-            }
-        }
-        if (ground!=1){
-            labels.push_back(0);
-        }
-    }
-     */
-////try with kdtree
+
+//count ground points with kdtree
     pcl::KdTreeFLANN<PointType> kdtree;
     std::vector<int> idxes;
     std::vector<float> sqr_dists;
-//    int cnt=0;
 
     auto cloudGround = boost::make_shared<pcl::PointCloud<PointType>>(cloudOut);
     kdtree.setInputCloud(cloudGround);
@@ -569,12 +551,10 @@ void PatchWork::estimate_ground(
         kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
         if (sqr_dists[0]==0)    {
             labels.push_back(1);
-//            cnt++;
         }
         else                    labels.push_back(0);
     }
-//    cout<<"number of 1: "<<cnt<<endl;
-///////
+
     static double end        = ros::Time::now().toSec();
 
     if (verbose_) {
@@ -588,7 +568,6 @@ void PatchWork::estimate_ground(
         cloud_ROS.header.frame_id = "/map";
         reject_pc_pub.publish(cloud_ROS);
     }
-    PlaneViz.publish(poly_list_);
 }
 
 double PatchWork::calc_principal_variance(const Eigen::Matrix3f &cov, const Eigen::Vector4f &centroid) {

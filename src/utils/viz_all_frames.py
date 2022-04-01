@@ -6,8 +6,8 @@ import time
 ######################## Set parameters #########################
 alg = "patchwork"
 seq = "04"
-kittiraw_dir = "/media/jeewon/Elements/semantic_kitti_raw/"
-label_csv_dir = "/media/jeewon/Elements/data/"
+kittiraw_dir = "/data/SemanticKITTI/"       #"/media/jeewon/Elements/semantic_kitti_raw/"
+label_csv_dir = "/data/"                     #"/media/jeewon/Elements/data/"
 #################################################################
 
 kittiraw_dir = kittiraw_dir+seq+"/velodyne/"

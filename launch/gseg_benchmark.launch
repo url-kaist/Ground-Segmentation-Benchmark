@@ -3,7 +3,7 @@
 
 <arg name="alg" default="patchwork" />
 <arg name="seq" default="all" />
-<!-- <arg name="seq" default="all" /> -->
+
 <param name="/algorithm" value="$(arg alg)" />
 <param name="/sequence" type="str" value="$(arg seq)" />
 <param name="/debug" value="true" />
