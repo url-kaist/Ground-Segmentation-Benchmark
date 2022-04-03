@@ -1,7 +1,6 @@
 save_flag: true
 sensor_height: 1.723
 
-
 gpf:
     num_iter: 3
     num_lpr: 20
