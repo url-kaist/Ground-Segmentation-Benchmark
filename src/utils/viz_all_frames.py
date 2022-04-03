@@ -1,13 +1,15 @@
 import numpy as np
 import open3d as o3d
-import os
 import time
+import os.path
+
+cwd = os.getcwd()
 
 ######################## Set parameters #########################
-alg = "patchwork"
+alg = "cascaded_gseg"
 seq = "04"
-kittiraw_dir = "/data/SemanticKITTI/"       #"/media/jeewon/Elements/semantic_kitti_raw/"
-label_csv_dir = "/data/"                     #"/media/jeewon/Elements/data/"
+kittiraw_dir = "/data/SemanticKITTI/"       # "/media/jeewon/Elements/semantic_kitti_raw/"
+label_csv_dir = cwd + "/ground_labels_04/"
 #################################################################
 
 kittiraw_dir = kittiraw_dir+seq+"/velodyne/"

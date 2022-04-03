@@ -77,6 +77,7 @@ This benchmark provides:
 The code wass tested successfully at
 * Linux 18.04 LTS
 * ROS Melodic
+* Ptyhon 3.6.9
 
 ### Settings
 
@@ -97,7 +98,7 @@ sudo apt-get install libpcl-dev
 ### Install Package
 * Clone our package with [catkin tools](https://catkin-tools.readthedocs.io/en/latest/)
 ```asm
-$ cd catkin_ws/src
+$ cd ~/catkin_ws/src
 $ git clone git@github.com:url-kaist/Ground-Segmentation-Benchmark.git
 $ catkin build gseg_benchmark
 ```
@@ -165,9 +166,9 @@ $ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
 ## If you are not familiar with ROS/C++...
 
 ### Provided Result Files
-We provide csv files of binary estimated results of sequences from "00" to "10".\
-1 for ground points, 2 for non-ground points.\
-Unzip `ground_labels.tar.gz` folder.
+We provide csv files of binary estimated results of sequences from "00" to "10". [download](https://drive.google.com/drive/folders/1WgjBiv6oCpJW65ECkHcMEhQdnTva7qlj?usp=sharing) \
+1 for ground points, 0 for non-ground points.\
+The results of the shortest sequence 04 for each algorithm are provided in `scr/utils/ground_labels_04/` folder.
 
 ### Visualization with Python
 We provide Python code to visualize estimated results in binary form.
@@ -177,12 +178,12 @@ We provide Python code to visualize estimated results in binary form.
 ```
 pip install open3d
 ```
-* Set parameters in `src/utils/viz_one_frame.py` or `src/utils/viz_all_frames.py`
+* Set parameters in `src/utils/viz_all_frames.py` or `src/utils/viz_one_frame.py`.
 ```
 alg = "patchwork"
 seq = "04"
 kittiraw_dir = "/data/SemanticKITTI/"
-label_csv_dir = "/data/"
+label_csv_dir = cwd + "/ground_labels_04/"          # default path is scr/utils/ground_labels_04/
 frame_num ="000010"                                 # needed only in viz_one_frame.py
 ```
 * Run python code
@@ -192,7 +193,7 @@ $ python3 viz_one_frame.py
 $ python3 viz_all_frames.py
 ```
 ![Image text](config/materials/open3d.png)
-* green: *ground*, black: *nonground*
+* green: *ground*, black: *non-ground*
 
 ---
 ## Contributors

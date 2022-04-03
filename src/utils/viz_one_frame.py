@@ -1,11 +1,14 @@
 import numpy as np
 import open3d as o3d
+import os.path
+
+cwd = os.getcwd()
 
 ######################## Set parameters #########################
 alg = "patchwork"
 seq = "04"
-kittiraw_dir = "/data/SemanticKITTI/"       #"/media/jeewon/Elements/semantic_kitti_raw/"
-label_csv_dir = "/data/"                     #"/media/jeewon/Elements/data/"
+kittiraw_dir = "/media/jeewon/Elements/semantic_kitti_raw/" #"/data/SemanticKITTI/"
+label_csv_dir = cwd + "/ground_labels_04/"
 frame_num ="000010"
 #################################################################
 
