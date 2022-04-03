@@ -7,8 +7,8 @@ cwd = os.getcwd()
 ######################## Set parameters #########################
 alg = "patchwork"
 seq = "04"
-kittiraw_dir = "/media/jeewon/Elements/semantic_kitti_raw/" #"/data/SemanticKITTI/"
-label_csv_dir = cwd + "/ground_labels_04/"
+kittiraw_dir = "/home/user/data/SemanticKITTI/"       # absolute path of KITTI dataset folder
+label_csv_dir = cwd + "/ground_labels_04/"            # modify to absolute path of data if you use other seq
 frame_num ="000010"
 #################################################################
 

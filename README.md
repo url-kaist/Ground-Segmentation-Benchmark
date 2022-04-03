@@ -65,7 +65,7 @@ This benchmark provides:
 
 ### RVIZ
 * It visualizes the ground segmentation result on RVIZ.
-![Image text](config/materials/gpf_rviz.png)
+  ![Image text](config/materials/gpf_rviz.png)
   * green: *True Positive*
   * blue: *False Negative*
   * red: *False Positive*
@@ -83,7 +83,7 @@ The code wass tested successfully at
 
 * Install [ROS](http://wiki.ros.org/melodic/Installation) on a machine
 * Install [jsk_visualization](https://github.com/jsk-ros-pkg/jsk_visualization) (For visualization of GLE of Patchwork)
- 
+
 ```
 sudo apt update
 sudo apt-get install ros-melodic-jsk-recognition
@@ -135,12 +135,12 @@ ${data_path}
 * Make directories to load [SemanticKITTI](#Offline-KITTI-dataset) dataset and save output files and apply them in rosparam setting.
 
 ```
-rosparam set /data_path "/data/SemanticKITTI/"      # path of downloaded KITTI dataset. It must include '/' at the end part
-rosparam set /stop_for_each_frame false             # set as 'true' to make it stop every frame 
-rosparam set /init_idx 0                            # index of first frame to run
-rosparam set /save_csv_file true                    # set as 'false' if csv output files are not needed
-rosparam set /save_pcd_flag false                   # set as 'false' if csv output files are not needed
-rosparam set /output_path "/data/"                  # path of output files to be generated
+rosparam set /data_path "/home/user/data/SemanticKITTI/"  # absolute path of downloaded KITTI dataset. It must include '/' at the end part
+rosparam set /stop_for_each_frame false                   # set as 'true' to make it stop every frame 
+rosparam set /init_idx 0                                  # index of first frame to run
+rosparam set /save_csv_file true                          # set as 'false' if csv output files are not needed
+rosparam set /save_pcd_flag false                         # set as 'false' if csv output files are not needed
+rosparam set /output_path "/data/"                        # reltive path of output files to be generated
 ```
 
 ### Run Ground Segmentation Algorithms
@@ -160,7 +160,7 @@ $ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
 
 * There are 7 algorithms provided: `gpf`, `cascaded_gseg`, `r_gpf`, `linefit`, `ransac`, `patchwork`, `gaussian`
 * The examples of `seq` are 00, 01, ..., 10
-  * If you do not set `seq` or set as `seq:=all`, then the csv output files of all datasets from "00" to "10" will be saved automatically.   
+  * If you do not set `seq` or set as `seq:=all`, then the csv output files of all datasets from "00" to "10" will be saved automatically.
 * Rviz result will be shown automatically.
 
 ## If you are not familiar with ROS/C++...
@@ -182,9 +182,9 @@ pip install open3d
 ```
 alg = "patchwork"
 seq = "04"
-kittiraw_dir = "/data/SemanticKITTI/"
-label_csv_dir = cwd + "/ground_labels_04/"          # default path is scr/utils/ground_labels_04/
-frame_num ="000010"                                 # needed only in viz_one_frame.py
+kittiraw_dir = "/home/user/data/SemanticKITTI/"       # absolute path of KITTI dataset folder
+label_csv_dir = cwd + "/ground_labels_04/"            # modify to absolute path of data if you use other seq
+frame_num ="000010"                                   # needed only in viz_one_frame.py
 ```
 * Run python code
 ```asm

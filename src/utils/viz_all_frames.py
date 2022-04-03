@@ -8,8 +8,8 @@ cwd = os.getcwd()
 ######################## Set parameters #########################
 alg = "cascaded_gseg"
 seq = "04"
-kittiraw_dir = "/data/SemanticKITTI/"       # "/media/jeewon/Elements/semantic_kitti_raw/"
-label_csv_dir = cwd + "/ground_labels_04/"
+kittiraw_dir = "/home/user/data/SemanticKITTI/"       # absolute path of KITTI dataset folder
+label_csv_dir = cwd + "/ground_labels_04/"            # modify to absolute path of data if you use other seq
 #################################################################
 
 kittiraw_dir = kittiraw_dir+seq+"/velodyne/"

@@ -260,12 +260,12 @@ int main(int argc, char **argv) {
     output_csvpath = output_csvdir + algorithm + "_";
     output_pcddir  = HOME + output_path + algorithm + "_pcds/" + seq + "/";
     pcd_savepath   = output_pcddir;
-    data_path      = HOME + data_path + seq;        //delete 'HOME +' if you use SSD
+    data_path      = data_path + seq;
 
 //------------- Save ground / non-ground estimation result in csv format -----------//
 /*
     estimate_output_dir = HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
-    bool save_ground_labels = true ;
+    bool save_ground_labels = false ;
     if (save_ground_labels) {
         int unused = system((std::string("exec rm -r ") + estimate_output_dir).c_str());
         unused = system((std::string("mkdir -p ") + estimate_output_dir).c_str());
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
         } else if (algorithm == "patchwork") {
             cout << "Operating patchwork..." << endl;
             patchwork->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-            patchwork->estimate_ground(pc_curr,labels);
+//            patchwork->estimate_ground(pc_curr,labels);
         } else if (algorithm == "gpregression") {
             cout << "Operating gpregression..." << endl;
             gpregression->estimate_ground(pc_curr,pc_ground, pc_non_ground, time_taken);
@@ -327,7 +327,7 @@ int main(int argc, char **argv) {
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
-            cascaded_gseg->estimate_ground(pc_curr,labels);
+//            cascaded_gseg->estimate_ground(pc_curr,labels);
             cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
             pc_curr.points.clear();
             pc_curr = pc_ground + pc_non_ground;
