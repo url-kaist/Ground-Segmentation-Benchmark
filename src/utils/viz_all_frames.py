@@ -3,8 +3,6 @@ import open3d as o3d
 import time
 import os.path
 
-cwd = os.getcwd()
-
 ######################## Set parameters #########################
 alg = "cascaded_gseg"
 seq = "04"

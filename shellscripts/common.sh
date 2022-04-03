@@ -8,9 +8,9 @@ rosparam set /init_idx 0                                 # index of the first fr
 
 rosparam set /stop_for_each_frame false                  # set as 'true' to make it stop every frame
 
-rosparam set /save_csv_file true                        # set as 'false' if csv output files are not needed
+rosparam set /save_csv_file false                        # set as 'false' if csv output files are not needed
 
-rosparam set /save_pcd_flag true                        # set as 'false' if csv output files are not needed
+rosparam set /save_pcd_flag false                        # set as 'false' if csv output files are not needed
 
 # Use path relative to HOME directory
 rosparam set /output_path "/data/"                       # path of output files to be generated

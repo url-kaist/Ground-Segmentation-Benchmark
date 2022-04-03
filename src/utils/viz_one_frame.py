@@ -1,8 +1,5 @@
 import numpy as np
 import open3d as o3d
-import os.path
-
-cwd = os.getcwd()
 
 ######################## Set parameters #########################
 alg = "patchwork"
