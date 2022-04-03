@@ -166,8 +166,9 @@ $ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
 ## If you are not familiar with ROS/C++...
 
 ### Provided Result Files
-We provide csv files of binary estimated results of sequences from "00" to "10". [download](https://drive.google.com/drive/folders/1WgjBiv6oCpJW65ECkHcMEhQdnTva7qlj?usp=sharing) \
-1 for ground points, 0 for non-ground points.\
+We provide csv files of binary estimated results of sequences from "00" to "10". 1 is for ground points and 0 is for non-ground points.\
+Click [here](https://drive.google.com/drive/folders/1WgjBiv6oCpJW65ECkHcMEhQdnTva7qlj?usp=sharing) to download result files.
+
 
 ### Visualization with Python
 We provide Python code to visualize estimated results in binary form.
