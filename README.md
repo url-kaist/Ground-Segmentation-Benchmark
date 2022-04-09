@@ -16,7 +16,7 @@ If our open sources have been helpful, please cite the below papers published by
 ```
 @inproceedings{oh2022travel,
     title={{TRAVEL: Traversable ground and above-ground object segmentation using graph representation of 3D LiDAR scans}},
-    author={Oh, Minho and Euigon, Jung and Lim, Hyungtae and Song, Wonho and Hu, Sumin and Lee, Eungchang Mason and Park, Junghee and Kim, Jaekyung and Lee, Jangwoo and Myung, Hyun},
+    author={Oh, Minho and Jung, Euigon and Lim, Hyungtae and Song, Wonho and Hu, Sumin and Lee, Eungchang Mason and Park, Junghee and Kim, Jaekyung and Lee, Jangwoo and Myung, Hyun},
     booktitle={IEEE Robotics and Automation Letters},
     year={2022},
     note={{Submitted}}
@@ -36,7 +36,7 @@ If our open sources have been helpful, please cite the below papers published by
 ```
 @article{lim2021patchwork,
     title={Patchwork: Concentric Zone-based Region-wise Ground Segmentation with Ground Likelihood Estimation Using a 3D LiDAR Sensor},
-    author={Lim, Hyungtae and Minho, Oh and Myung, Hyun},
+    author={Lim, Hyungtae and Oh, Minho and Myung, Hyun},
     journal={IEEE Robot. Autom. Lett.},
     volume={6},
     number={4},
