@@ -37,6 +37,9 @@ public:
             pcl::PointCloud<PointXYZILID> &cloudOut,
             pcl::PointCloud<PointXYZILID> &cloudNonground,
             double &time_taken);
+    void estimate_ground(
+            pcl::PointCloud<PointXYZILID> &cloudIn,
+            vector<int> &labels);
 
     geometry_msgs::PolygonStamped set_plane_polygon(const Eigen::Vector3f &normal_v, const float &d);
 
@@ -98,9 +101,36 @@ void RansacGPF::estimate_ground(
     plane_marker.polygons.push_back(polygons);
     plane_marker.likelihood.push_back(BLUE_COLOR);
     PlaneViz.publish(plane_marker);
-
 }
 
+void RansacGPF::estimate_ground(
+        pcl::PointCloud<PointXYZILID> &cloudIn,
+        vector<int> &labels) {
+
+    pcl::PointCloud<PointXYZILID> cloudOut;
+    pcl::PointCloud<PointXYZILID> cloudNonground;
+    int ground = 0;
+    if (!labels.empty()) labels.clear();
+
+    auto start = chrono::high_resolution_clock::now();
+    extract_ground_RANSAC(cloudIn, cloudOut, cloudNonground);
+
+    pcl::KdTreeFLANN<PointXYZILID> kdtree;
+    std::vector<int> idxes;
+    std::vector<float> sqr_dists;
+
+    auto cloudGround = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudOut);
+    kdtree.setInputCloud(cloudGround);
+
+    for (int i = 0; i<cloudIn.points.size(); i++) {
+        PointXYZILID query = cloudIn.points[i];
+        kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
+        if (sqr_dists[0]==0) labels.push_back(1);
+        else labels.push_back(0);
+    }
+
+    auto end = chrono::high_resolution_clock::now();
+}
 void RansacGPF::extract_ground_RANSAC(
         const pcl::PointCloud<PointXYZILID> &cloudIn,
         pcl::PointCloud<PointXYZILID> &dst, pcl::PointCloud<PointXYZILID> &outlier) {

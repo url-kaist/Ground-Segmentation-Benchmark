@@ -77,6 +77,8 @@ public:
                          pcl::PointCloud<PointXYZILID>& cloudOut,
                          pcl::PointCloud<PointXYZILID>& cloudNonground,
                          double& time_taken);
+    void estimate_ground(const pcl::PointCloud<PointXYZILID>& cloudIn,
+                         vector<int> &labels);
 
     geometry_msgs::PolygonStamped set_plane_polygon(const MatrixXf& normal_v, const float& d);
 private:
@@ -266,12 +268,66 @@ void RegionwiseGPF::estimate_ground(const pcl::PointCloud<PointXYZILID>& cloudIn
         }
       }
     }
-    std::cout<<num_max_p<< " | " << num_max_rg<<" | "<<num_max_rng<<std::endl;
+//    std::cout<<num_max_p<< " | " << num_max_rg<<" | "<<num_max_rng<<std::endl;
 
     auto end = chrono::high_resolution_clock::now();
     time_taken = static_cast<double>(chrono::duration_cast<chrono::microseconds>(end - start).count()) / 1000000.0;
 
     PlaneViz.publish(poly_list_);
+}
+
+void RegionwiseGPF::estimate_ground(const pcl::PointCloud<PointXYZILID>& cloudIn,
+                                    vector<int> &labels) {
+    pcl::PointCloud<PointXYZILID> cloudOut;
+    pcl::PointCloud<PointXYZILID> cloudNonground;
+    if (!labels.empty()) labels.clear();
+
+    auto start = chrono::high_resolution_clock::now();
+
+    pcl::PointCloud<PointXYZILID> laserCloudIn;
+    laserCloudIn = cloudIn;
+
+    sort(laserCloudIn.points.begin(),laserCloudIn.end(), point_cmp);
+    pcl::PointCloud<PointXYZILID>::iterator it = laserCloudIn.points.begin();
+    for(int i=0;i<laserCloudIn.points.size();i++){
+        if(laserCloudIn.points[i].z < -1.5*sensor_height_){
+            it++;
+        }else{
+            break;
+        }
+    }
+    laserCloudIn.points.erase(laserCloudIn.points.begin(),it);
+
+    clear_patches();
+    pc2patches(laserCloudIn, patches);
+
+    cloudOut.clear();
+    cloudNonground.clear();
+    for (uint16_t sector_idx=0; sector_idx < num_sectors_; ++sector_idx){
+        for (uint16_t ring_idx=0; ring_idx < num_rings_; ++ring_idx){
+            if (patches[ring_idx][sector_idx].points.size() > num_min_pts_){
+                extract_piecewiseground(patches[ring_idx][sector_idx], regionwise_ground_, regionwise_nonground_);
+                cloudOut += regionwise_ground_;
+                cloudNonground += regionwise_nonground_;
+
+            }
+        }
+    }
+
+    pcl::KdTreeFLANN<PointXYZILID> kdtree;
+    std::vector<int> idxes;
+    std::vector<float> sqr_dists;
+
+    auto cloudGround = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudOut);
+    kdtree.setInputCloud(cloudGround);
+
+    for (int i = 0; i<cloudIn.points.size(); i++) {
+        PointXYZILID query = cloudIn.points[i];
+        kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
+        if (sqr_dists[0]==0) labels.push_back(1);
+        else labels.push_back(0);
+    }
+    auto end = chrono::high_resolution_clock::now();
 }
 
 double RegionwiseGPF::xy2theta(const double& x, const double& y){ // 0 ~ 2 * PI

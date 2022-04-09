@@ -132,6 +132,10 @@ public:
             pcl::PointCloud<PointType> &cloudNonground,
             double &time_taken);
 
+    void estimate_ground(
+            pcl::PointCloud<PointType> &cloudIn,
+            vector<int> &labels);
+
     geometry_msgs::PolygonStamped set_plane_polygon(const MatrixXf &normal_v, const float &d);
 
 private:
@@ -405,9 +409,9 @@ void PatchWork::estimate_ground(
                                     cloudNonground += regionwise_nonground_;
                                 } else {
                                     if (verbose_) {
-                                        std::cout << "\033[1;34m[Elevation] Rejection operated. Check " << ring_idx + 2 * k
-                                                  << "th param. of elevation_thr_: " << elevation_thr_[ring_idx + 2 * k] << " < "
-                                                  << ground_z_elevation << "\033[0m" << std::endl;
+//                                        std::cout << "\033[1;34m[Elevation] Rejection operated. Check " << ring_idx + 2 * k
+//                                                  << "th param. of elevation_thr_: " << elevation_thr_[ring_idx + 2 * k] << " < "
+//                                                  << ground_z_elevation << "\033[0m" << std::endl;
                                         reject_pc += regionwise_ground_;
                                     }
                                     cloudNonground += regionwise_ground_;
@@ -446,6 +450,124 @@ void PatchWork::estimate_ground(
         reject_pc_pub.publish(cloud_ROS);
     }
     PlaneViz.publish(poly_list_);
+}
+
+void PatchWork::estimate_ground(
+        pcl::PointCloud<PointType> &cloudIn,
+        vector<int> &labels
+        ) {
+    pcl::PointCloud<PointType> cloudOut;
+    pcl::PointCloud<PointType> cloudNonground;
+    if (!labels.empty()) labels.clear();
+
+    pcl::PointCloud<PointType> laserCloudIn;
+    laserCloudIn = cloudIn;
+
+    poly_list_.header.stamp = ros::Time::now();
+    if (!poly_list_.polygons.empty()) poly_list_.polygons.clear();
+    if (!poly_list_.likelihood.empty()) poly_list_.likelihood.clear();
+
+    static double start = ros::Time::now().toSec();
+
+    sort(laserCloudIn.points.begin(), laserCloudIn.end(), point_z_cmp);
+
+    pcl::PointCloud<PointType>::iterator it = laserCloudIn.points.begin();
+    for (int                             i  = 0; i < laserCloudIn.points.size(); i++) {
+        if (laserCloudIn.points[i].z < -1.8 * sensor_height_) {
+            it++;
+        } else {
+            break;
+        }
+    }
+    laserCloudIn.points.erase(laserCloudIn.points.begin(), it);
+
+    for (int k = 0; k < num_zones_; ++k) {
+        flush_patches_in_zone(ConcentricZoneModel_[k], num_sectors_each_zone_[k], num_rings_each_zone_[k]);
+    }
+    pc2czm(laserCloudIn, ConcentricZoneModel_);
+    for (int k = 0; k < num_zones_; ++k) {
+        auto zone = ConcentricZoneModel_[k];
+        for (uint16_t ring_idx = 0; ring_idx < num_rings_each_zone_[k]; ++ring_idx) {
+            for (uint16_t sector_idx = 0; sector_idx < num_sectors_each_zone_[k]; ++sector_idx) {
+                if (zone[ring_idx][sector_idx].points.size() > num_min_pts_) {
+                    extract_piecewiseground(k, zone[ring_idx][sector_idx], regionwise_ground_, regionwise_nonground_);
+                    const double ground_z_vec = abs(normal_(2, 0));
+                    const double ground_z_elevation = pc_mean_(2, 0);
+                    const double surface_variable =
+                            singular_values_.minCoeff() /
+                            (singular_values_(0) + singular_values_(1) + singular_values_(2));
+
+                    if (visualize_) {
+                        auto polygons = set_polygons(k, ring_idx, sector_idx, 3);
+                        polygons.header = poly_list_.header;
+                        poly_list_.polygons.push_back(polygons);
+                        set_ground_likelihood_estimation_status(k, ring_idx, ground_z_vec, ground_z_elevation,
+                                                                surface_variable);
+                    }
+                    if (ground_z_vec < uprightness_thr_) {
+                        // All points are rejected
+                        cloudNonground += regionwise_ground_;
+                        cloudNonground += regionwise_nonground_;
+                    } else { // satisfy uprightness
+                        if ((k < 2) && (ring_idx < 2)) {
+                            if (ground_z_elevation > elevation_thr_[ring_idx + 2 * k]) {
+                                if (flatness_thr_[ring_idx + 2 * k] > surface_variable) {
+                                    if (verbose_) {
+                                        revert_pc += regionwise_ground_;
+                                    }
+                                    cloudOut += regionwise_ground_;
+                                    cloudNonground += regionwise_nonground_;
+                                } else {
+                                    if (verbose_) {
+                                        reject_pc += regionwise_ground_;
+                                    }
+                                    cloudNonground += regionwise_ground_;
+                                    cloudNonground += regionwise_nonground_;
+                                }
+                            } else {
+                                cloudOut += regionwise_ground_;
+                                cloudNonground += regionwise_nonground_;
+                            }
+                        } else {
+                            cloudOut += regionwise_ground_;
+                            cloudNonground += regionwise_nonground_;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+//count ground points with kdtree
+    pcl::KdTreeFLANN<PointType> kdtree;
+    std::vector<int> idxes;
+    std::vector<float> sqr_dists;
+
+    auto cloudGround = boost::make_shared<pcl::PointCloud<PointType>>(cloudOut);
+    kdtree.setInputCloud(cloudGround);
+
+    for (int i = 0; i<cloudIn.points.size(); i++) {
+        PointType query = cloudIn.points[i];
+        kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
+        if (sqr_dists[0]==0)    {
+            labels.push_back(1);
+        }
+        else                    labels.push_back(0);
+    }
+
+    static double end        = ros::Time::now().toSec();
+
+    if (verbose_) {
+        sensor_msgs::PointCloud2 cloud_ROS;
+        pcl::toROSMsg(revert_pc, cloud_ROS);
+        cloud_ROS.header.stamp    = ros::Time::now();
+        cloud_ROS.header.frame_id = "/map";
+        revert_pc_pub.publish(cloud_ROS);
+        pcl::toROSMsg(reject_pc, cloud_ROS);
+        cloud_ROS.header.stamp    = ros::Time::now();
+        cloud_ROS.header.frame_id = "/map";
+        reject_pc_pub.publish(cloud_ROS);
+    }
 }
 
 double PatchWork::calc_principal_variance(const Eigen::Matrix3f &cov, const Eigen::Vector4f &centroid) {

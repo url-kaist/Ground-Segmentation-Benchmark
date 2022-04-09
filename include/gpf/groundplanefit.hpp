@@ -79,6 +79,10 @@ public:
             pcl::PointCloud<PointXYZILID> &cloudNonground,
             double &time_taken);
 
+    void estimate_ground(
+            const pcl::PointCloud<PointXYZILID> &cloudIn,
+            vector<int> &labels);
+
     geometry_msgs::PolygonStamped set_plane_polygon(const MatrixXf &normal_v, const float &d);
 
     geometry_msgs::PolygonStamped set_plane_polygon4trisection(const MatrixXf &normal_v, const float &d, uint8_t i);
@@ -352,6 +356,90 @@ void GroundPlaneFit::estimate_ground(
 
     PlaneViz.publish(plane_marker);
 
+}
+void GroundPlaneFit::estimate_ground(
+        const pcl::PointCloud<PointXYZILID> &cloudIn,
+        vector<int> &labels) {
+
+    auto start = chrono::high_resolution_clock::now();
+    pcl::PointCloud<PointXYZILID> laserCloudIn;
+    laserCloudIn = cloudIn;
+    pcl::PointCloud<PointXYZILID> laserCloudIn_org = cloudIn;
+
+    pcl::PointCloud<PointXYZILID> cloudOut;
+    pcl::PointCloud<PointXYZILID> cloudNonground;
+
+    sort(laserCloudIn.points.begin(), laserCloudIn.end(), point_cmp);
+    pcl::PointCloud<PointXYZILID>::iterator it = laserCloudIn.points.begin();
+    for (int i  = 0; i < laserCloudIn.points.size(); i++) {
+        if (laserCloudIn.points[i].z < -1.5 * sensor_height_) {
+            it++;
+        } else {
+            break;
+        }
+    }
+    laserCloudIn.points.erase(laserCloudIn.points.begin(), it);
+    if (mode_ == "single") {
+        extract_initial_seeds_(laserCloudIn);
+        g_ground_pc = g_seeds_pc;
+        for (int i = 0; i < num_iter_; i++) {
+            estimate_plane_();
+            g_ground_pc->clear();
+            g_not_ground_pc->clear();
+
+            MatrixXf points(laserCloudIn_org.points.size(), 3);
+            int       j            = 0;
+            for (auto p:laserCloudIn_org.points) {
+                points.row(j++) << p.x, p.y, p.z;
+            }
+            VectorXf  result       = points * normal_;
+            int       num_inliers  = 0;
+            int       num_outliers = 0;
+            for (int  r            = 0; r < result.rows(); r++) {
+                if (result[r] < th_dist_d_) {
+                    //                g_all_pc->points[r].label = 1u;// means ground
+                    g_ground_pc->points.push_back(laserCloudIn_org[r]);
+                    //                ++num_inliers;
+                } else {
+                    //                g_all_pc->points[r].label = 0u;// means not ground and non clusterred
+                    if (i == num_iter_ - 1) {
+                        g_not_ground_pc->points.push_back(laserCloudIn_org[r]);
+                    }
+                }
+            }
+        }
+        cloudOut       = *g_ground_pc;
+        cloudNonground = *g_not_ground_pc;
+    } else if (mode_ == "multiple") {
+        clear_patches();
+        pc2patches(laserCloudIn, patches);
+        normals_.clear();
+        cloudOut.clear();
+        cloudNonground.clear();
+
+        for (uint16_t sector_idx = 0; sector_idx < NUM_TRISECTION; ++sector_idx) {
+            if (!patches[sector_idx].empty()) {
+                extract_piecewiseground(patches[sector_idx], regionwise_ground_, regionwise_nonground_);
+                normals_.emplace_back(std::pair<Eigen::MatrixXf, double>(normal_, d_));
+                cloudOut += regionwise_ground_;
+                cloudNonground += regionwise_nonground_;
+            }
+        }
+    }
+    pcl::KdTreeFLANN<PointXYZILID> kdtree;
+    std::vector<int> idxes;
+    std::vector<float> sqr_dists;
+
+    auto cloudGround = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudOut);
+    kdtree.setInputCloud(cloudGround);
+
+    for (int i = 0; i<cloudIn.points.size(); i++) {
+        PointXYZILID query = cloudIn.points[i];
+        kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
+        if (sqr_dists[0]==0) labels.push_back(1);
+        else labels.push_back(0);
+    }
+    auto end = chrono::high_resolution_clock::now();
 }
 
 void GroundPlaneFit::extract_piecewiseground(

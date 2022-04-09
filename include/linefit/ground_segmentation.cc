@@ -58,7 +58,7 @@ GroundSegmentation::GroundSegmentation(const GroundSegmentationParams& params) :
 }
 
 void GroundSegmentation::segment(const PointCloud& cloud, std::vector<int>* segmentation) {
-  std::cout << "Segmenting cloud with " << cloud.size() << " points...\n";
+//  std::cout << "Segmenting cloud with " << cloud.size() << " points...\n";
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   segmentation->clear();
   segmentation->resize(cloud.size(), 0);
@@ -90,7 +90,7 @@ void GroundSegmentation::segment(const PointCloud& cloud, std::vector<int>* segm
   }
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> fp_ms = end - start;
-  std::cout << "Done! Took " << fp_ms.count() << "ms\n";
+//  std::cout << "Done! Took " << fp_ms.count() << "ms\n";
 }
 
 void GroundSegmentation::getLines(std::list<PointLine> *lines) {

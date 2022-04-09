@@ -69,7 +69,7 @@
 
 #define BLUE_COLOR 0.0
 
-int NUM_ZEROS = 5;
+int NUM_ZEROS = 6;
 
 using namespace std;
 
@@ -167,14 +167,29 @@ int count_num_outliers(const pcl::PointCloud<PointXYZILID>& pc){
   }
   return num_outliers;
 }
+int count_num_outliers_veg(const pcl::PointCloud<PointXYZILID>& pc){
+    int num_outliers = 0;
+    std::vector<int> outlier_classes_veg = {UNLABELED, OUTLIER, VEGETATION};
 
+    std::vector<int>::iterator iter;
+    for (auto const& pt: pc.points){
+        iter = std::find(outlier_classes_veg.begin(), outlier_classes_veg.end(), pt.label);
+        if (iter != outlier_classes_veg.end()){ // corresponding class is in ground classes
+            num_outliers ++;
+        }
+    }
+    return num_outliers;
+}
 
 void discern_ground(const pcl::PointCloud<PointXYZILID>& src, pcl::PointCloud<PointXYZILID>& ground, pcl::PointCloud<PointXYZILID>& non_ground){
   ground.clear();
   non_ground.clear();
   std::vector<int>::iterator iter;
   for (auto const& pt: src.points){
-    if (pt.label == UNLABELED || pt.label == OUTLIER) continue;
+    if (pt.label == UNLABELED || pt.label == OUTLIER) {
+        continue;
+        //non_ground.push_back(pt);
+    }//continue;
     iter = std::find(ground_classes.begin(), ground_classes.end(), pt.label);
     if (iter != ground_classes.end()){ // corresponding class is in ground classes
       if (pt.label == VEGETATION){
@@ -193,7 +208,10 @@ void discern_ground_without_vegetation(const pcl::PointCloud<PointXYZILID>& src,
   non_ground.clear();
   std::vector<int>::iterator iter;
   for (auto const& pt: src.points){
-    if (pt.label == UNLABELED || pt.label == OUTLIER) continue;
+    if (pt.label == UNLABELED || pt.label == OUTLIER) {
+        continue;
+//        non_ground.push_back(pt); //continue;
+    }
     iter = std::find(ground_classes.begin(), ground_classes.end(), pt.label);
     if (iter != ground_classes.end()){ // corresponding class is in ground classes
       if (pt.label != VEGETATION) ground.push_back(pt);
@@ -202,6 +220,41 @@ void discern_ground_without_vegetation(const pcl::PointCloud<PointXYZILID>& src,
     }
   }
 }
+
+void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
+                                pcl::PointCloud<PointXYZILID>& ground_estimated,
+                                double & precision,
+                                double& recall,
+                                vector<int>& TPFNs,
+                                bool reject_num_of_outliers=true){
+
+    int num_ground_est = ground_estimated.points.size();
+    int num_ground_gt = count_num_ground(pc_curr);
+    int num_inliers_ground = count_num_ground(ground_estimated);
+    int num_TP, num_FP, num_FN, num_TF;
+    if (reject_num_of_outliers){
+        int num_outliers_est = count_num_outliers(ground_estimated);
+//        int num_outliers_gt = count_num_outliers(pc_curr);
+        num_TP = num_inliers_ground + num_outliers_est;
+        num_FP = num_ground_est - num_TP;
+        num_FN = num_ground_gt - num_inliers_ground;
+        num_TF = pc_curr.points.size() - (num_TP + num_FP + num_FN);
+        precision = (double)(num_TP)/(num_TP + num_FP) * 100;
+        recall = (double)(num_TP)/(num_TP + num_FN) * 100;
+    }else{
+        // Not recommended
+        num_TP = num_inliers_ground;
+        num_FP = num_ground_est - num_TP;
+        num_FN = num_ground_gt - num_TP;
+        num_TF = pc_curr.points.size() - (num_TP + num_FP + num_FN);
+        precision = (double)(num_TP)/(num_TP + num_FP) * 100;
+        recall = (double)(num_TP)/(num_TP + num_FN) * 100;
+    }
+    TPFNs.clear();
+    TPFNs = {num_TP, num_FP, num_FN, num_TF};
+
+}
+/*
 
 void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
                                 pcl::PointCloud<PointXYZILID>& ground_estimated,
@@ -234,7 +287,7 @@ void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
     TPFNs = {num_TP, num_FP, num_FN, num_TF};
 
 }
-
+*/
 int count_num_vegi(pcl::PointCloud<PointXYZILID> cloud){
     int num_veg = 0;
     for (auto const& pt: cloud.points)
@@ -271,25 +324,30 @@ void calculate_precision_recall_without_vegetation(const pcl::PointCloud<PointXY
     int num_veg_est = count_num_vegi(ground_estimated);
 
     // Note: num_ground_est veg가 이미 제외된 수임!
-    int num_ground_est = ground_estimated.size() - num_veg_est; // num. positives
+    int num_ground_est = ground_estimated.size();// - num_veg_est; // num. positives
     int num_ground_gt = count_num_ground_without_vegetation(pc_curr);
 
-    int num_TP = count_num_ground_without_vegetation(ground_estimated);
-    int num_FP, num_FN, num_TF;
+    int num_inliers_ground = count_num_ground_without_vegetation(ground_estimated);
+    int num_TP, num_FP, num_FN, num_TF;
     if (reject_num_of_outliers){
-        int num_outliers_est = count_num_outliers(ground_estimated);
-        int num_outliers_gt = count_num_outliers(pc_curr);
-        num_FP = (num_ground_est - num_outliers_est) - num_TP;
-        num_FN = num_ground_gt - num_TP;
-        num_TF = (pc_curr.points.size() - num_outliers_gt - num_veg_gt) - (num_TP + num_FP + num_FN);
-
+        int num_outliers_est = count_num_outliers_veg(ground_estimated);
+        int num_outliers_gt = count_num_outliers_veg(pc_curr);
+        num_TP = num_inliers_ground + num_outliers_est;
+        num_FP = num_ground_est - num_TP;
+        num_FN = num_ground_gt - num_inliers_ground;
+        num_TF = pc_curr.points.size() - (num_TP + num_FP + num_FN);
+//        num_FP = (num_ground_est - num_outliers_est) - num_TP;
+//        num_FN = num_ground_gt - num_TP;
+//        num_TF = (pc_curr.points.size() - num_outliers_gt - num_veg_gt) - (num_TP + num_FP + num_FN);
         precision = (double)(num_TP)/(num_TP + num_FP) * 100;
-        recall = (double)(num_TP)/num_ground_gt * 100;
+        recall = (double)(num_TP)/(num_TP + num_FN) * 100;
     }else{
         // Not recommended
+        num_TP = num_inliers_ground;
         num_FP = num_ground_est - num_TP;
         num_FN = num_ground_gt - num_TP;
-        num_TF = (pc_curr.points.size() - num_veg_gt) - (num_TP + num_FP + num_FN);
+        num_TF = pc_curr.points.size()  - (num_TP + num_FP + num_FN);
+//        num_TF = (pc_curr.points.size() - num_veg_gt) - (num_TP + num_FP + num_FN);
         precision = (double)(num_TP)/num_ground_est * 100;
         recall = (double)(num_TP)/num_ground_gt * 100;
     }
@@ -418,6 +476,7 @@ void pc2pcdfile(const pcl::PointCloud<PointXYZILID>& TP, const pcl::PointCloud<P
   }
   pc_out.width = pc_out.points.size();
   pc_out.height = 1;
+  cout<<pcd_filename<<endl;
   pcl::io::savePCDFileASCII(pcd_filename, pc_out);
 
 }
