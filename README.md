@@ -1,5 +1,6 @@
 # Ground Segmentation Benchmark
 
+
 This repository contains various Ground Segmentation baseline methods. Currently, 7 projects are organized for *SemanticKITTI dataset*:
 
 * [GPF](https://github.com/VincentCheungM/Run_based_segmentation) (Ground Plane Fitting)
@@ -9,6 +10,10 @@ This repository contains various Ground Segmentation baseline methods. Currently
 * [Mono plane estimation by RANSAC](https://github.com/jafrado/qhulltest)
 * [Patchwork](https://github.com/LimHyungTae/patchwork) (ver.1)
 * [Gaussian Floor Segmentation](https://github.com/SmallMunich/FloorSegmentation/tree/master/Gaussian_process_based_Real-time_Ground_Segmentation_for_Autonomous_Land_Vehicles)
+
+The repository consists of C++ and ROS. But, for python users, we also **provide all the previously extracted ground label files**. Please check the [explanations below](#If-you-are-not-familiar-with-ROS/C++...).
+
+---
 
 ## Citation
 
@@ -166,9 +171,20 @@ $ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
 ## If you are not familiar with ROS/C++...
 
 ### Provided Result Files
-We provide csv files of binary estimated results of sequences from "00" to "10". 1 is for ground points and 0 is for non-ground points.\
-Click [here](https://drive.google.com/drive/folders/1WgjBiv6oCpJW65ECkHcMEhQdnTva7qlj?usp=sharing) to download result files.
+We provide csv files of binary estimated results of sequences from "00" to "10". The value `1` denotes the corresponding point is estimated as the ground, whereas `0` denotes the point is considered as the non-ground.
 
+The previously extracted ground labels can be downloaded via the below commands:
+```asm
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/cascaded_gseg_ground_labels.zip
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/gpf_gseg_ground_labels.zip
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/gpregression_ground_labels.zip
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/linefit_ground_labels.zip
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/patchwork_ground_labels.zip
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/ransac_ground_labels.zip
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/r_gpf_ground_labels.zip
+```
+
+Click [here](https://drive.google.com/drive/folders/1WgjBiv6oCpJW65ECkHcMEhQdnTva7qlj?usp=sharing) to download result files.
 
 ### Visualization with Python
 We provide Python code to visualize estimated results in binary form.
@@ -198,8 +214,8 @@ $ python3 viz_all_frames.py
 ---
 ## Contributors
 
-* Hyungtae Lim: `shapelim@kaist.ac.kr`
-* Jeewon Kim (as a research intern @[URL](https://urobot.kaist.ac.kr/)): `ddarong2000@kaist.ac.kr`
+* Hyungtae Lim: `shapelim at kaist dot ac dot kr`
+* Jeewon Kim (as a research intern @[URL](https://urobot.kaist.ac.kr/)): `ddarong2000 at kaist dot ac dot kr`
 
 ## Errors
 If the following error occurs in flann
