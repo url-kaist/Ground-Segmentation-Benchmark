@@ -176,7 +176,7 @@ We provide csv files of binary estimated results of sequences from "00" to "10".
 The previously extracted ground labels can be downloaded via the below commands:
 ```asm
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/cascaded_gseg_ground_labels.zip
-wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/gpf_gseg_ground_labels.zip
+wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/gpf_ground_labels.zip
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/gpregression_ground_labels.zip
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/linefit_ground_labels.zip
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/patchwork_ground_labels.zip
