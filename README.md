@@ -174,7 +174,7 @@ $ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
 We provide csv files of binary estimated results of sequences from "00" to "10". The value `1` denotes the corresponding point is estimated as the ground, whereas `0` denotes the point is considered as the non-ground.
 
 The previously extracted ground labels can be downloaded via the below commands:
-```asm
+```
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/cascaded_gseg_ground_labels.zip
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/gpf_ground_labels.zip
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/gpregression_ground_labels.zip
@@ -183,8 +183,6 @@ wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/patchwork_ground
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/ransac_ground_labels.zip
 wget https://urserver.kaist.ac.kr/publicdata/GroundSegBenchmark/r_gpf_ground_labels.zip
 ```
-
-Click [here](https://drive.google.com/drive/folders/1WgjBiv6oCpJW65ECkHcMEhQdnTva7qlj?usp=sharing) to download result files.
 
 ### Visualization with Python
 We provide Python code to visualize estimated results in binary form.
