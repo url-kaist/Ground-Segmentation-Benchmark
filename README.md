@@ -161,6 +161,11 @@ $ roslaunch gseg_benchmark gseg_benchmark.launch alg:=patchwork seq:=05
 * There are 7 algorithms provided: `gpf`, `cascaded_gseg`, `r_gpf`, `linefit`, `ransac`, `patchwork`, `gaussian`
 * The examples of `seq` are 00, 01, ..., 10
   * If you do not set `seq` or set as `seq:=all`, then the csv output files of all datasets from "00" to "10" will be saved automatically.
+* Use this command to run all algorithm for all sequences.
+```asm
+$ roslaunch gseg_benchmark gseg_benchmark.launch alg:=all seq:=all
+```
+
 * Rviz result will be shown automatically.
 
 ## If you are not familiar with ROS/C++...
