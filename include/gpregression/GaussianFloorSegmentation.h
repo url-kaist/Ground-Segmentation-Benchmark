@@ -535,6 +535,7 @@ namespace pcl
         pcl::PointCloud<PointType> cloudOut;
         pcl::PointCloud<PointType> cloudNonground;
         int isground = 0;
+        double epsilon = 0.0000001;
 
         if (!labels.empty()) labels.clear();
 
@@ -571,7 +572,9 @@ namespace pcl
         for (int i = 0; i<cloudIn.points.size(); i++) {
             PointXYZILID query = cloudIn.points[i];
             kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
-            if (sqr_dists[0]==0) labels.push_back(1);
+            if (sqr_dists[0]< epsilon)    {
+                labels.push_back(1);
+            }
             else labels.push_back(0);
         }
 

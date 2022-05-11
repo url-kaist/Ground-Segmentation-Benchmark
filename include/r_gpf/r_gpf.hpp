@@ -321,10 +321,14 @@ void RegionwiseGPF::estimate_ground(const pcl::PointCloud<PointXYZILID>& cloudIn
     auto cloudGround = boost::make_shared<pcl::PointCloud<PointXYZILID>>(cloudOut);
     kdtree.setInputCloud(cloudGround);
 
+    double epsilon = 0.0000001;
+
     for (int i = 0; i<cloudIn.points.size(); i++) {
         PointXYZILID query = cloudIn.points[i];
         kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
-        if (sqr_dists[0]==0) labels.push_back(1);
+        if (sqr_dists[0]< epsilon)    {
+            labels.push_back(1);
+        }
         else labels.push_back(0);
     }
     auto end = chrono::high_resolution_clock::now();

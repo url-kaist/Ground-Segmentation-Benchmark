@@ -240,6 +240,7 @@ void CascadedGroundSeg::estimate_ground(
 //    nonground_points.reserve(200000);
 
     int ground = 0;
+    double epsilon = 0.0000001;
 
     auto start = chrono::high_resolution_clock::now();
     SegmentGround(laserCloudIn, nonground_points, ground_points);
@@ -259,7 +260,9 @@ void CascadedGroundSeg::estimate_ground(
     for (int i = 0; i<cloudIn.points.size(); i++) {
         PointXYZILID query = cloudIn.points[i];
         kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
-        if (sqr_dists[0]==0) labels.push_back(1);
+        if (sqr_dists[0]< epsilon)    {
+            labels.push_back(1);
+        }
         else labels.push_back(0);
     }
 

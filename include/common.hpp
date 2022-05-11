@@ -254,9 +254,8 @@ void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
     TPFNs = {num_TP, num_FP, num_FN, num_TF};
 
 }
-/*
 
-void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
+void calculate_precision_recall_origin(const pcl::PointCloud<PointXYZILID>& pc_curr,
                                 pcl::PointCloud<PointXYZILID>& ground_estimated,
                                 double & precision,
                                 double& recall,
@@ -287,7 +286,7 @@ void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
     TPFNs = {num_TP, num_FP, num_FN, num_TF};
 
 }
-*/
+
 int count_num_vegi(pcl::PointCloud<PointXYZILID> cloud){
     int num_veg = 0;
     for (auto const& pt: cloud.points)

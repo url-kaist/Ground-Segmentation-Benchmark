@@ -546,13 +546,15 @@ void PatchWork::estimate_ground(
     auto cloudGround = boost::make_shared<pcl::PointCloud<PointType>>(cloudOut);
     kdtree.setInputCloud(cloudGround);
 
+    double epsilon = 0.0000001;
+
     for (int i = 0; i<cloudIn.points.size(); i++) {
         PointType query = cloudIn.points[i];
         kdtree.nearestKSearch(query, 1, idxes, sqr_dists);
-        if (sqr_dists[0]==0)    {
+        if (sqr_dists[0]< epsilon)  {
             labels.push_back(1);
         }
-        else                    labels.push_back(0);
+        else labels.push_back(0);
     }
 
     static double end        = ros::Time::now().toSec();
