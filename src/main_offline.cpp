@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
 //------------- Save ground / non-ground estimation result in csv format -----------//
 
     estimate_output_dir = HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
-    bool save_ground_labels = true ;
+    bool save_ground_labels = false ;
     if (save_ground_labels) {
         int unused = system((std::string("exec rm -r ") + estimate_output_dir).c_str());
         unused = system((std::string("mkdir -p ") + estimate_output_dir).c_str());
@@ -308,7 +308,7 @@ int main(int argc, char **argv) {
     for (int n = init_idx; n < N; ++n) {
         signal(SIGINT, signal_callback_handler);
 
-//        cout << n << "th frame comes" << endl;
+        cout << n << "th frame comes" << endl;
         pcl::PointCloud<PointType> pc_curr;
         loader.get_cloud(n, pc_curr);
         pcl::PointCloud<PointType> pc_ground;
@@ -318,14 +318,11 @@ int main(int argc, char **argv) {
         vector<int> labels;
         labels.reserve(pc_curr.size());
 
-//        std::cout << "cloud before filtering: "<<pc_curr.size()<<endl;
-
         static double time_taken;
         if (algorithm == "gpf") {
             cout << "Operating gpf..." << endl;
             gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
-            gpf->estimate_ground(pc_curr,labels);
-            cout<<labels.size()<<" "<<pc_curr.size()<<endl;
+//            gpf->estimate_ground(pc_curr,labels);
         } else if (algorithm == "r_gpf") {
             cout << "Operating r-gpf..." << endl;
             r_gpf->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
@@ -345,12 +342,12 @@ int main(int argc, char **argv) {
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
-//            cascaded_gseg->estimate_ground(pc_curr,labels);
+            cascaded_gseg->estimate_ground(pc_curr,labels);
             cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
             pc_curr.points.clear();
             pc_curr = pc_ground + pc_non_ground;
             int num2 = (int) pc_curr.size();
-            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
+//            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
         } else if (algorithm == "linefit") {
             pcl::PointCloud<pcl::PointXYZ> pc_curr_tmp;
             // To run linefit, dummy pcl::PointXYZ is set
@@ -361,7 +358,6 @@ int main(int argc, char **argv) {
             GroundSegmentation linefit(linefit_params);
             labels.empty();
             linefit.segment(pc_curr_tmp, &labels);
-
             for (size_t i = 0; i < pc_curr_tmp.size(); ++i) {
                 const auto &pt = pc_curr.points[i];
                 if (labels[i] == 1) {
@@ -395,7 +391,7 @@ int main(int argc, char **argv) {
         double recall_mean =(double)accumulate(recall_arr.begin(), recall_arr.end(), 0)/recall_arr.size();
         double prec_mean =(double)accumulate(prec_arr.begin(), prec_arr.end(), 0)/prec_arr.size();
 
-        cout << "R: "<<(double)recall_mean<<", "<<(double)cal_stdev(recall_arr)<<" | P: "<<(double)prec_mean<<", "<<(double)cal_stdev(prec_arr)<<endl;
+//        cout << "R: "<<(double)recall_mean<<", "<<(double)cal_stdev(recall_arr)<<" | P: "<<(double)prec_mean<<", "<<(double)cal_stdev(prec_arr)<<endl;
 //------------------------
         calculate_precision_recall_origin(pc_curr, pc_ground, precision_o, recall_o, TPFNs_o);
         recall_o_arr.push_back(recall_o);
@@ -404,12 +400,12 @@ int main(int argc, char **argv) {
         double recall_o_mean =(double)accumulate(recall_o_arr.begin(), recall_o_arr.end(), 0)/recall_o_arr.size();
         double prec_o_mean =(double)accumulate(prec_o_arr.begin(), prec_o_arr.end(), 0)/prec_o_arr.size();
 
-        cout << "R_o: "<<(double)recall_o_mean<<", "<<(double)cal_stdev(recall_o_arr)<<" | P_o: "<<(double)prec_o_mean<<", "<<(double)cal_stdev(prec_o_arr)<<endl;
+//        cout << "R_o: "<<(double)recall_o_mean<<", "<<(double)cal_stdev(recall_o_arr)<<" | P_o: "<<(double)prec_o_mean<<", "<<(double)cal_stdev(prec_o_arr)<<endl;
 
         //Print-reload
-//        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
-//        cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
-//        cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
+        cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
+        cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
+        cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 //        If you want to save precision/recall in a text file, revise this part
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -468,7 +464,7 @@ int main(int argc, char **argv) {
             std::string binary_csv_path = estimate_output_dir + count_str_padded + ".csv";
 
             ofstream label_output(binary_csv_path, ios::app);
-            cout<<labels.size()<<" "<<pc_curr.points.size()<<endl;
+            //cout<<labels.size()<<" "<<pc_curr.points.size()<<endl;
             for (auto label : labels){
                 label_output << label << ",";
             }
