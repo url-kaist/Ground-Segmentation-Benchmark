@@ -59,6 +59,11 @@ bool        save_pcd_flag;
 bool        stop_for_each_frame;
 int         init_idx;
 
+vector<double> recall_arr;
+vector<double> prec_arr;
+vector<double> recall_o_arr;
+vector<double> prec_o_arr;
+
 // Utils for linefit algorithm
 void set_linefit_params(ros::NodeHandle *nh, GroundSegmentationParams &params) {
     nh->param("/linefit/visualize", params.visualize, params.visualize);
@@ -207,6 +212,18 @@ private:
 
 };
 
+double cal_stdev(vector<double> v){
+    double sum = std::accumulate(v.begin(), v.end(), 0.0);
+    double mean = sum / v.size();
+
+    std::vector<double> diff(v.size());
+    std::transform(v.begin(), v.end(), diff.begin(), [mean](double x) { return x - mean; });
+    double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    double stdev = std::sqrt(sq_sum / v.size());
+
+    return stdev;
+}
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "Benchmark");
     ros::NodeHandle nh;
@@ -263,7 +280,7 @@ int main(int argc, char **argv) {
     data_path      = data_path + seq;
 
 //------------- Save ground / non-ground estimation result in csv format -----------//
-/*
+
     estimate_output_dir = HOME + output_path + algorithm + "_ground_labels/" + seq + "/";
     bool save_ground_labels = false ;
     if (save_ground_labels) {
@@ -271,7 +288,7 @@ int main(int argc, char **argv) {
         unused = system((std::string("mkdir -p ") + estimate_output_dir).c_str());
         cout << "\033[1;32mSAVE PATH: " << estimate_output_dir << "\033[estimate_out0m" << endl;
     }
-    */
+
 //-----------------------------------------------------------------------------------//
 
     if (save_csv_file) {
@@ -291,7 +308,7 @@ int main(int argc, char **argv) {
     for (int n = init_idx; n < N; ++n) {
         signal(SIGINT, signal_callback_handler);
 
-//        cout << n << "th frame comes" << endl;
+        cout << n << "th frame comes" << endl;
         pcl::PointCloud<PointType> pc_curr;
         loader.get_cloud(n, pc_curr);
         pcl::PointCloud<PointType> pc_ground;
@@ -300,8 +317,6 @@ int main(int argc, char **argv) {
         pc_non_ground.reserve(150000);
         vector<int> labels;
         labels.reserve(pc_curr.size());
-
-//        std::cout << "cloud before filtering: "<<pc_curr.size()<<endl;
 
         static double time_taken;
         if (algorithm == "gpf") {
@@ -327,12 +342,12 @@ int main(int argc, char **argv) {
         } else if (algorithm == "cascaded_gseg") {
             cout << "Operating cascaded_gseg..." << endl;
             int num1 = (int) pc_curr.size();
-//            cascaded_gseg->estimate_ground(pc_curr,labels);
+            cascaded_gseg->estimate_ground(pc_curr,labels);
             cascaded_gseg->estimate_ground(pc_curr, pc_ground, pc_non_ground,time_taken);
             pc_curr.points.clear();
             pc_curr = pc_ground + pc_non_ground;
             int num2 = (int) pc_curr.size();
-            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
+//            cout << "\033[1;33m" << "point num diff: " << num1 - num2 << "\033[0m" << endl;
         } else if (algorithm == "linefit") {
             pcl::PointCloud<pcl::PointXYZ> pc_curr_tmp;
             // To run linefit, dummy pcl::PointXYZ is set
@@ -343,7 +358,6 @@ int main(int argc, char **argv) {
             GroundSegmentation linefit(linefit_params);
             labels.empty();
             linefit.segment(pc_curr_tmp, &labels);
-
             for (size_t i = 0; i < pc_curr_tmp.size(); ++i) {
                 const auto &pt = pc_curr.points[i];
                 if (labels[i] == 1) {
@@ -361,15 +375,34 @@ int main(int argc, char **argv) {
 
         // Estimation
         static double      precision, recall, precision_wo_veg, recall_wo_veg;
+        static double      precision_o, recall_o;
         static vector<int> TPFNs; // TP, FP, FN, TF order
         static vector<int> TPFNs_wo_veg; // TP, FP, FN, TF order
+        static vector<int> TPFNs_o; // TP, FP, FN, TF order
 
         calculate_precision_recall(pc_curr, pc_ground, precision, recall, TPFNs);
 //        cout<<"w vegi: " <<pc_curr.size()-(TPFNs[0] +TPFNs[1]+TPFNs[2]+TPFNs[3])<<endl;
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
 //        cout<<"wo vegi: " <<pc_curr.size()-(TPFNs_wo_veg[0] +TPFNs_wo_veg[1]+TPFNs_wo_veg[2]+TPFNs_wo_veg[3])<<endl;
 
-        //Print Precision, Recall
+        recall_arr.push_back(recall);
+        prec_arr.push_back(precision);
+
+        double recall_mean =(double)accumulate(recall_arr.begin(), recall_arr.end(), 0)/recall_arr.size();
+        double prec_mean =(double)accumulate(prec_arr.begin(), prec_arr.end(), 0)/prec_arr.size();
+
+//        cout << "R: "<<(double)recall_mean<<", "<<(double)cal_stdev(recall_arr)<<" | P: "<<(double)prec_mean<<", "<<(double)cal_stdev(prec_arr)<<endl;
+//------------------------
+        calculate_precision_recall_origin(pc_curr, pc_ground, precision_o, recall_o, TPFNs_o);
+        recall_o_arr.push_back(recall_o);
+        prec_o_arr.push_back(precision_o);
+
+        double recall_o_mean =(double)accumulate(recall_o_arr.begin(), recall_o_arr.end(), 0)/recall_o_arr.size();
+        double prec_o_mean =(double)accumulate(prec_o_arr.begin(), prec_o_arr.end(), 0)/prec_o_arr.size();
+
+//        cout << "R_o: "<<(double)recall_o_mean<<", "<<(double)cal_stdev(recall_o_arr)<<" | P_o: "<<(double)prec_o_mean<<", "<<(double)cal_stdev(prec_o_arr)<<endl;
+
+        //Print-reload
         cout << "\033[1;32m" << n << "th:" << " takes " << setprecision(4) <<  time_taken << " sec.\033[0m" << endl;
         cout << "\033[1;32m [W/ Vegi.] P: " << precision << " | R: " << recall << "\033[0m" << endl;
         cout << "\033[1;32m [WO Vegi.] P: " << precision_wo_veg << " | R: " << recall_wo_veg << "\033[0m" << endl;
@@ -424,19 +457,21 @@ int main(int argc, char **argv) {
             pc2pcdfile(TP, FP, FN, TN, pcd_filename);
         }
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-/*      Run this code if you want to save ground(1) / nonground(0) result as Nx1 csv file
+//      Run this code if you want to save ground(1) / nonground(0) result as Nx1 csv file
         if (save_ground_labels){
             std::string count_str        = std::to_string(n);
             std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
             std::string binary_csv_path = estimate_output_dir + count_str_padded + ".csv";
 
             ofstream label_output(binary_csv_path, ios::app);
+            //cout<<labels.size()<<" "<<pc_curr.points.size()<<endl;
             for (auto label : labels){
-                label_output << label << std::endl;
+                label_output << label << ",";
             }
+            label_output<<endl;
             label_output.close();
         }
-*/
+
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         CloudPublisher.publish(cvt::cloud2msg(pc_curr));
         TPPublisher.publish(cvt::cloud2msg(TP));
