@@ -74,10 +74,10 @@ set(alg_source
     )
 
 add_executable(benchmark src/main_rosbag.cpp ${alg_source})
-target_link_libraries(benchmark ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(benchmark ${catkin_LIBRARIES} ${PCL_LIBRARIES} stdc++fs)
 add_dependencies(benchmark gseg_benchmark_generate_messages_cpp)
 
 add_executable(benchmark_offline src/main_offline.cpp ${alg_source})
-target_link_libraries(benchmark_offline ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(benchmark_offline ${catkin_LIBRARIES} ${PCL_LIBRARIES} stdc++fs)
 add_dependencies(benchmark_offline gseg_benchmark_generate_messages_cpp)
 

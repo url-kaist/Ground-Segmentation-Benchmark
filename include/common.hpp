@@ -357,12 +357,8 @@ void calculate_precision_recall_without_vegetation(const pcl::PointCloud<PointXY
 
 
 
-int save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, string ABS_DIR, string seq, int count){
-
-  std::string count_str = std::to_string(count);
-  std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
-  std::string output_filename = ABS_DIR + "/" + seq + "/" + count_str_padded + ".csv";
-  ofstream sc_output(output_filename);
+void save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, const string output_path){
+  ofstream sc_output(output_path, ios::app);
 
   vector<int> labels(NUM_ALL_CLASSES, 0);
   for (auto const& pt: pc.points){

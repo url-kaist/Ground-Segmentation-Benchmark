@@ -39,10 +39,10 @@ void GroundSegmentation::visualize(const std::list<PointLine>& lines,
                                              "ground_cloud");
   visualizePointCloud(obstacle_cloud, "obstacle_cloud");
   visualizeLines(lines);
-  while (!viewer_->wasStopped ()){
-      viewer_->spinOnce (100);
-      boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-  }
+//  while (!viewer_->wasStopped ()){
+//      viewer_->spinOnce (100);
+//      boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+//  }
 }
 
 GroundSegmentation::GroundSegmentation(const GroundSegmentationParams& params) :

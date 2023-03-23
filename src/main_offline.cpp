@@ -16,10 +16,12 @@
 #include "cascadedseg/cascaded_groundseg.hpp"
 #include "linefit/ground_segmentation.h"
 #include "gpregression/GaussianFloorSegmentation.h"
+#include <experimental/filesystem>
 
 #include <csignal>
 
 using namespace std;
+namespace fs = std::experimental::filesystem;
 
 ros::Publisher CloudPublisher;
 ros::Publisher TPPublisher;
@@ -58,7 +60,7 @@ bool        save_csv_file;
 bool        save_pcd_flag;
 bool        stop_for_each_frame;
 int         init_idx;
-
+double      cutoff_range;
 vector<double> recall_arr;
 vector<double> prec_arr;
 vector<double> recall_o_arr;
@@ -88,6 +90,17 @@ void set_linefit_params(ros::NodeHandle *nh, GroundSegmentationParams &params) {
     if (nh->getParam("/linefit/max_fit_error", max_fit_error)) {
         params.max_error_square = max_fit_error * max_fit_error;
     }
+}
+
+pcl::PointCloud<PointType> cutoff_pointcloud(const pcl::PointCloud<PointType> &src, const double range) {
+    pcl::PointCloud<PointType> pc_cutoff;
+    pc_cutoff.reserve(src.points.size());
+    for (const auto& pt: src.points) {
+        if (pt.x * pt.x + pt.y * pt.y < range * range) {
+           pc_cutoff.emplace_back(pt);
+        }
+    }
+    return pc_cutoff;
 }
 
 void xyzilid2xyz(const pcl::PointCloud<PointType> &src, pcl::PointCloud<pcl::PointXYZ> &dst) {
@@ -203,6 +216,7 @@ public:
             }
 
         }
+        return 0;
     }
 
 private:
@@ -235,6 +249,7 @@ int main(int argc, char **argv) {
     nh.param<bool>("/save_csv_file", save_csv_file, false);
     nh.param<bool>("/save_pcd_flag", save_pcd_flag, false);
     nh.param<int>("/init_idx", init_idx, 0);
+    nh.param<double>("/cutoff_range", cutoff_range, -1.0);
 //    nh.param<string>("/output_csvpath", output_csvpath, "/data/");
 //    nh.param<string>("/pcd_savepath", pcd_savepath, "/data/");
     nh.param<string>("/data_path", data_path, "/");
@@ -273,8 +288,16 @@ int main(int argc, char **argv) {
 
     string HOME = std::getenv("HOME");
 
-    output_csvdir  = HOME + output_path + algorithm + "_csv/" + seq + "/";
-    output_csvpath = output_csvdir + algorithm + "_";
+    output_csvdir  = [&]() -> string {
+        std::ostringstream oss;
+        oss << std::setprecision(8) << std::noshowpoint << cutoff_range;
+        std::string range2string = oss.str();
+        if (cutoff_range < 0) return HOME + output_path + algorithm + "/";
+        else                  return HOME + output_path + algorithm + "_" + range2string + "/";
+    }();
+    int unused = system((std::string("mkdir -p ") + output_csvpath).c_str());
+
+    output_csvpath = output_csvdir; // output_csvdir + algorithm + "_";
     output_pcddir  = HOME + output_path + algorithm + "_pcds/" + seq + "/";
     pcd_savepath   = output_pcddir;
     data_path      = data_path + seq;
@@ -292,10 +315,12 @@ int main(int argc, char **argv) {
 //-----------------------------------------------------------------------------------//
 
     if (save_csv_file) {
-        int unused = system((std::string("exec rm -r ") + output_csvdir).c_str());
-        unused = system((std::string("mkdir -p ") + output_csvdir).c_str());
-        cout << "\033[1;32mSAVE PATH: " << output_csvdir << "\033[0m" << endl;
+        const string target_path = output_csvpath;
+        if (!fs::is_directory(output_csvpath) || !fs::exists(output_csvpath)) { // Check if src folder exists
+            fs::create_directories(output_csvpath); // create src folder
+        }
     }
+
     if (save_pcd_flag) {
         int unused = system((std::string("exec rm -r ") + output_pcddir).c_str());
         unused = system((std::string("mkdir -p ") + output_pcddir).c_str());
@@ -380,6 +405,14 @@ int main(int argc, char **argv) {
         static vector<int> TPFNs_wo_veg; // TP, FP, FN, TF order
         static vector<int> TPFNs_o; // TP, FP, FN, TF order
 
+        if (cutoff_range > 0) {
+            const auto& pc_curr_cutoff = cutoff_pointcloud(pc_curr, cutoff_range);
+            const auto& pc_ground_cutoff = cutoff_pointcloud(pc_ground, cutoff_range);
+
+            pc_curr = pc_curr_cutoff;
+            pc_ground = pc_ground_cutoff;
+        }
+
         calculate_precision_recall(pc_curr, pc_ground, precision, recall, TPFNs);
 //        cout<<"w vegi: " <<pc_curr.size()-(TPFNs[0] +TPFNs[1]+TPFNs[2]+TPFNs[3])<<endl;
         calculate_precision_recall_without_vegetation(pc_curr, pc_ground, precision_wo_veg, recall_wo_veg, TPFNs_wo_veg);
@@ -411,6 +444,8 @@ int main(int argc, char **argv) {
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         static string w_veg_path  = output_csvpath + "w_veg_" + seq + ".csv";
         static string wo_veg_path = output_csvpath + "wo_veg_" + seq + ".csv";
+        static string all_labels_path  = output_csvpath + "all_labels_" + seq + ".csv";
+
         if (save_csv_file) {
             // Save w/ veg
             ofstream output(w_veg_path, ios::app);
@@ -424,6 +459,8 @@ int main(int argc, char **argv) {
                    << TPFNs_wo_veg[1] << "," << TPFNs_wo_veg[2] << "," << TPFNs_wo_veg[3];
             output << std::endl;
             output.close();
+
+            save_all_labels(pc_curr, all_labels_path);
         }
 
 // -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
